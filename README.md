@@ -141,7 +141,7 @@ Example: Adding DataSources, creating the default schema_migrations table, and m
     .manageSchema(db, BootstrapAction.NONE);
 ```
 
-Example: Adding DataSources, creating the default schema_migrations table, and managing migrations.
+Example: Adding DataSources, creating a schema_migrations table through an applied schema, and managing migrations.
 
 ```java
 (new SQLiteMigrationManager())
