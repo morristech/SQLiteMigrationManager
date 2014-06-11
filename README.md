@@ -82,7 +82,7 @@ In its current form, only the ResourceDataSource is implemented, with the follow
 public ResourceDataSource(String schemaPath, String migrationsPath);
 ```
 
-At runtime, the ResourceDataSource looks in bundled Java resources for a schema file matching the `schemaPath` and any resources whose path is prefixed with `migrationsPath`.
+At runtime, the ResourceDataSource looks in bundled Java resources for a schema file matching the `schemaPath` and any resources whose path is prefixed with `migrationsPath`.  See `ResourceDataSourceTests` and the bundled test JAR in '/src/androidTest/libs' for examples.
 
 The DataSource interface can be implemented by other classes to supply Schema and Migration objects from other sources (e.g. compiled classes or http).
 
