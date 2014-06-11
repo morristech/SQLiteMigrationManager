@@ -287,4 +287,43 @@ public class Fixtures {
                         migration6, migration7}
         );
     }
+
+    public static DataSource mockBananaDataSourceNoSchemaNoTable2() {
+        String schemaSql = null;
+
+        String name2 = "1402070001_CreateTableBananas.sql";
+        String migration2 = "CREATE TABLE bananas (\n"
+                + "    name TEXT\n"
+                + ");";
+
+        String name3 = "1402070002_InsertWhiteYellowIntoBananas.sql";
+        String migration3 = "INSERT INTO bananas (name) VALUES ('white');\n"
+                + "\n"
+                + "INSERT INTO bananas (name) VALUES ('yellow');";
+
+        String name4 = "1402070003_AlterBananasAddRipeness.sql";
+        String migration4 = "ALTER TABLE bananas ADD ripeness NUMERIC;";
+
+        String name5 = "1402070004_UpdateBananasSetRipeness.sql";
+        String migration5 = "UPDATE bananas SET ripeness = 1 WHERE name = 'white';\n"
+                + "\n"
+                + "UPDATE bananas SET ripeness = 50 WHERE name = 'yellow';";
+
+        String name6 = "1402070005_InsertGreenBrownIntoBananas.sql";
+        String migration6 = "INSERT INTO bananas (name, ripeness) VALUES ('brown', 80);\n"
+                + "\n"
+                + "INSERT INTO bananas (name, ripeness) VALUES ('green', 0);";
+
+        String name7 = "1402070006_DeleteWhiteFromBananas.sql";
+        String migration7 = "DELETE FROM bananas WHERE name = 'white';";
+
+        String name8 = "1402070007_InsertSpottedIntoBananas.sql";
+        String migration8 = "INSERT INTO bananas (name, ripeness) VALUES ('spotted', 75);";
+
+        return mockDataSource(schemaSql,
+                new String[]{name2, name3, name4, name5, name6, name7, name8},
+                new String[]{migration2, migration3, migration4, migration5,
+                        migration6, migration7, migration8}
+        );
+    }
 }

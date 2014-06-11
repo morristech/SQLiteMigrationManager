@@ -12,11 +12,11 @@ import java.util.List;
 import java.util.Set;
 
 import static com.layer.sqlite.Fixtures.assertStreamNotNull;
-
 import static com.layer.sqlite.Fixtures.getDatabase;
 import static com.layer.sqlite.Fixtures.getMigrationManagerMockDataSource;
 import static com.layer.sqlite.Fixtures.mockBananaDataSourceNoSchemaCreatesTable;
 import static com.layer.sqlite.Fixtures.mockBananaDataSourceNoSchemaNoTable;
+import static com.layer.sqlite.Fixtures.mockBananaDataSourceNoSchemaNoTable2;
 import static com.layer.sqlite.Fixtures.mockBananaDataSourceSchemaNoTable;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.assertions.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -469,5 +469,91 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(c2.getString(0)).isEqualTo("green");
         assertThat(c2.getLong(1)).isEqualTo(0);
         c2.close();
+    }
+
+    public void testUpgrade() throws Exception {
+        SQLiteDatabase db = getDatabase(getContext());
+        SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
+        migrationManager.addDataSource(mockBananaDataSourceNoSchemaNoTable());
+
+        assertThat(migrationManager.manageSchema(
+                db, SQLiteMigrationManager.BootstrapAction.CREATE_MIGRATIONS_TABLE)).isEqualTo(6);
+
+        // Verify applied versions.
+        Cursor c = db.rawQuery("SELECT version FROM schema_migrations ORDER BY version", null);
+        assertThat(c.getCount()).isEqualTo(6);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070001);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070002);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070003);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070004);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070005);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070006);
+        c.close();
+
+        //Verify inserted data
+        Cursor c2 = db.rawQuery("SELECT name, ripeness FROM bananas ORDER BY _ROWID_", null);
+        assertThat(c2.getCount()).isEqualTo(3);
+        c2.moveToNext();
+        assertThat(c2.getString(0)).isEqualTo("yellow");
+        assertThat(c2.getLong(1)).isEqualTo(50);
+        c2.moveToNext();
+        assertThat(c2.getString(0)).isEqualTo("brown");
+        assertThat(c2.getLong(1)).isEqualTo(80);
+        c2.moveToNext();
+        assertThat(c2.getString(0)).isEqualTo("green");
+        assertThat(c2.getLong(1)).isEqualTo(0);
+        c2.close();
+
+        assertThat(migrationManager.manageSchema(
+                db, SQLiteMigrationManager.BootstrapAction.CREATE_MIGRATIONS_TABLE)).isEqualTo(0);
+
+        // "Upgrade" with an additional migration
+        SQLiteMigrationManager migrationManager2 = new SQLiteMigrationManager();
+        migrationManager2.addDataSource(mockBananaDataSourceNoSchemaNoTable2());
+
+        assertThat(migrationManager2.manageSchema(
+                db, SQLiteMigrationManager.BootstrapAction.CREATE_MIGRATIONS_TABLE)).isEqualTo(1);
+
+        // Verify applied versions.
+        Cursor c3 = db.rawQuery("SELECT version FROM schema_migrations ORDER BY version", null);
+        assertThat(c3.getCount()).isEqualTo(7);
+        c3.moveToNext();
+        assertThat(c3.getLong(0)).isEqualTo(1402070001);
+        c3.moveToNext();
+        assertThat(c3.getLong(0)).isEqualTo(1402070002);
+        c3.moveToNext();
+        assertThat(c3.getLong(0)).isEqualTo(1402070003);
+        c3.moveToNext();
+        assertThat(c3.getLong(0)).isEqualTo(1402070004);
+        c3.moveToNext();
+        assertThat(c3.getLong(0)).isEqualTo(1402070005);
+        c3.moveToNext();
+        assertThat(c3.getLong(0)).isEqualTo(1402070006);
+        c3.moveToNext();
+        assertThat(c3.getLong(0)).isEqualTo(1402070007);
+        c3.close();
+
+        //Verify inserted data
+        Cursor c4 = db.rawQuery("SELECT name, ripeness FROM bananas ORDER BY _ROWID_", null);
+        assertThat(c4.getCount()).isEqualTo(4);
+        c4.moveToNext();
+        assertThat(c4.getString(0)).isEqualTo("yellow");
+        assertThat(c4.getLong(1)).isEqualTo(50);
+        c4.moveToNext();
+        assertThat(c4.getString(0)).isEqualTo("brown");
+        assertThat(c4.getLong(1)).isEqualTo(80);
+        c4.moveToNext();
+        assertThat(c4.getString(0)).isEqualTo("green");
+        assertThat(c4.getLong(1)).isEqualTo(0);
+        c4.moveToNext();
+        assertThat(c4.getString(0)).isEqualTo("spotted");
+        assertThat(c4.getLong(1)).isEqualTo(75);
+        c4.close();
     }
 }
