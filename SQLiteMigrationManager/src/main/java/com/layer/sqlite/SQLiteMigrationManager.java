@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,7 +27,94 @@ import java.util.Set;
 public class SQLiteMigrationManager {
     public static final long NO_VERSIONS = -1;
 
+    /**
+     * `BootstrapAction` tells SQLiteMigrationManager which action to take when no
+     * schema_migrations table is found during a call to manageSchema().
+     * <p><ul>
+     * <li>NONE: Do nothing.  A SQLException will get thrown if no schema_migrations table is
+     * created by the first migration.</li>
+     * <li>APPLY_SCHEMA: Load and apply a Schema from the DataSource set.</li>
+     * <li>CREATE_MIGRATIONS_TABLE: Create the schema_migrations table.</li>
+     * </ul></p>
+     */
+    public static enum BootstrapAction {
+        NONE,
+        APPLY_SCHEMA,
+        CREATE_MIGRATIONS_TABLE
+    }
+
+    /**
+     * DataSources from which to find Schemas and Migrations
+     */
     private final Set<DataSource> mDataSources = new HashSet<DataSource>();
+
+    /**
+     * Applies pending Migrations in order.  If a migration throws an SQLException, the process is
+     * halted at that point, but all previous migrations remain applied.  Behavior when no
+     * migrations table is present is controlled by the `BootstrapAction action` parameter.
+     *
+     * @param db     Database on which to operate.
+     * @param action NoSchemaAction action to take when hasMigrationsTable() returns false.
+     * @return The number of migrations applied.
+     * @see #getOriginVersion(android.database.sqlite.SQLiteDatabase)
+     * @see #getMigrations()
+     * @see #getAppliedVersions(android.database.sqlite.SQLiteDatabase)
+     * @see com.layer.sqlite.SQLiteMigrationManager.BootstrapAction
+     */
+    public int manageSchema(SQLiteDatabase db, BootstrapAction action) throws IOException {
+        int numApplied = 0;
+
+        // Begin an outer transaction.
+        db.beginTransaction();
+
+        // Bootstrap if no schema_migrations is present.
+        if (!hasMigrationsTable(db)) {
+            switch (action) {
+                case APPLY_SCHEMA:
+                    applySchema(db);
+                    break;
+                case CREATE_MIGRATIONS_TABLE:
+                    createMigrationsTable(db);
+                    break;
+                case NONE:
+                default:
+                    break;
+            }
+        }
+
+        // Apply Migrations.
+        try {
+            for (Migration migration : getPendingMigrations(db)) {
+                try {
+                    // Begin an inner Migration transaction.
+                    db.beginTransaction();
+
+                    // Apply the Migration.
+                    SQLParser.execute(db, migration);
+                    insertVersion(db, migration.getVersion());
+                    numApplied++;
+
+                    // Set the inner Migration transaction successful.
+                    db.setTransactionSuccessful();
+                } catch (SQLException e) {
+                    // Halt the migration process on error.
+                    e.printStackTrace();
+                    break;
+                } finally {
+                    // End the inner Migration transaction.
+                    db.endTransaction();
+                }
+            }
+            // Set the outer transaction successful.
+            db.setTransactionSuccessful();
+        } finally {
+            // End the outer transaction.
+            db.endTransaction();
+        }
+        return numApplied;
+    }
+
+    // DataSources
 
     /**
      * Adds a DataSource to the set of available sources for providing Schema and Migrations.
@@ -40,6 +126,8 @@ public class SQLiteMigrationManager {
         mDataSources.addAll(Arrays.asList(dataSource));
         return this;
     }
+
+    // Migrations Table
 
     /**
      * Returns true if the `schema_migrations` table exists.
@@ -71,6 +159,8 @@ public class SQLiteMigrationManager {
                 "version INTEGER UNIQUE NOT NULL)");
         return this;
     }
+
+    // Schema
 
     /**
      * Returns true if any DataSource has a Schema.
@@ -122,6 +212,8 @@ public class SQLiteMigrationManager {
         return this;
     }
 
+    // Migrations
+
     /**
      * Generates a sorted list of Migration objects from all DataSources.
      *
@@ -144,6 +236,57 @@ public class SQLiteMigrationManager {
         Collections.sort(sortedMigrations);
         return sortedMigrations;
     }
+
+    /**
+     * Returns a sorted list of Migrations available in the set of DataSources which have not been
+     * applied to the given SQLiteDatabase.  The list is generated as follows:
+     *
+     * 0) If the database isn't managed, return the entire list of available migrations; else:
+     * 1) Get the origin version with getOrigin().
+     * 2) Get the list of applied versions with getAppliedVersions().
+     * 3) Loop through available Migrations with getMigrations(), and:
+     * 3.1) If the migration has a version less than or equal to origin, skip;
+     * 3.2) If the migration is in the applied list, skip;
+     * 3.3) Otherwise, the migration is pending.
+     *
+     * @param db Database on which to compare migration versions.
+     * @return The list of available Migrations which have not been applied.
+     */
+    public List<Migration> getPendingMigrations(SQLiteDatabase db) throws IOException {
+        // If this database isn't yet managed, just return the list of available Migrations.
+        if (!hasMigrationsTable(db)) {
+            return getMigrations();
+        }
+
+        // (1) Get the origin version of this database.
+        long originVersion = getOriginVersion(db);
+
+        // (2) Get a list of currently-applied versions.
+        HashSet<Long> appliedVersions = getAppliedVersions(db);
+
+        // (3) Generate the list of pending migrations.
+        List<Migration> pendingMigrations = new LinkedList<Migration>();
+        for (Migration migration : getMigrations()) {
+            long version = migration.getVersion();
+
+            if (version <= originVersion) {
+                // Our origin already had this migration applied, continue.
+                continue;
+            }
+
+            if (appliedVersions.contains(version)) {
+                // We've already applied this migration, continue.
+                continue;
+            }
+
+            // This Migration is pending.
+            pendingMigrations.add(migration);
+        }
+        Collections.sort(pendingMigrations);
+        return pendingMigrations;
+    }
+
+    // Versions
 
     /**
      * Loads the lowest version number from the schema_migrations table, returns NO_VERSIONS if the
@@ -221,139 +364,15 @@ public class SQLiteMigrationManager {
     }
 
     /**
-     * Returns a sorted list of Migrations available in the set of DataSources which have not been
-     * applied to the given SQLiteDatabase.  The list is generated as follows:
+     * Records a successfully-applied migration in the `schema_migrations` table.
      *
-     * 0) If the database isn't managed, return the entire list of available migrations; else:
-     * 1) Get the origin version with getOrigin().
-     * 2) Get the list of applied versions with getAppliedVersions().
-     * 3) Loop through available Migrations with getMigrations(), and:
-     * 3.1) If the migration has a version less than or equal to origin, skip;
-     * 3.2) If the migration is in the applied list, skip;
-     * 3.3) Otherwise, the migration is pending.
-     *
-     * @param db Database on which to compare migration versions.
-     * @return The list of available Migrations which have not been applied.
+     * @param db      Database to record a successful version in.
+     * @param version Migration version to record.
+     * @throws SQLException
      */
-    public List<Migration> getPendingMigrations(SQLiteDatabase db) throws IOException {
-        // If this database isn't yet managed, just return the list of available Migrations.
-        if (!hasMigrationsTable(db)) {
-            return getMigrations();
-        }
-
-        // (1) Get the origin version of this database.
-        long originVersion = getOriginVersion(db);
-
-        // (2) Get a list of currently-applied versions.
-        HashSet<Long> appliedVersions = getAppliedVersions(db);
-
-        // (3) Generate the list of pending migrations.
-        List<Migration> pendingMigrations = new LinkedList<Migration>();
-        for (Migration migration : getMigrations()) {
-            long version = migration.getVersion();
-
-            if (version <= originVersion) {
-                // Our origin already had this migration applied, continue.
-                continue;
-            }
-
-            if (appliedVersions.contains(version)) {
-                // We've already applied this migration, continue.
-                continue;
-            }
-
-            // This Migration is pending.
-            pendingMigrations.add(migration);
-        }
-        Collections.sort(pendingMigrations);
-        return pendingMigrations;
-    }
-
     public void insertVersion(SQLiteDatabase db, Long version) throws SQLException {
         ContentValues values = new ContentValues();
         values.put("version", version);
         db.insert("schema_migrations", null, values);
-    }
-
-    /**
-     * `BootstrapAction` tells SQLiteMigrationManager which action to take when no
-     * schema_migrations table is found during a call to manageSchema().
-     * <p><ul>
-     * <li>NONE: Do nothing.  A SQLException will get thrown if no schema_migrations table is
-     * created by the first migration.</li>
-     * <li>APPLY_SCHEMA: Load and apply a Schema from the DataSource set.</li>
-     * <li>CREATE_MIGRATIONS_TABLE: Create the schema_migrations table.</li>
-     * </ul></p>
-     */
-    public static enum BootstrapAction {
-        NONE,
-        APPLY_SCHEMA,
-        CREATE_MIGRATIONS_TABLE
-    }
-
-    /**
-     * Applies pending Migrations in order.  If a migration throws an SQLException, the process is
-     * halted at that point, but all previous migrations remain applied.  Behavior when no
-     * migrations table is present is controlled by the `BootstrapAction action` parameter.
-     *
-     * @param db     Database on which to operate.
-     * @param action NoSchemaAction action to take when hasMigrationsTable() returns false.
-     * @return The number of migrations applied.
-     * @see #getOriginVersion(android.database.sqlite.SQLiteDatabase)
-     * @see #getMigrations()
-     * @see #getAppliedVersions(android.database.sqlite.SQLiteDatabase)
-     * @see com.layer.sqlite.SQLiteMigrationManager.BootstrapAction
-     */
-    public int manageSchema(SQLiteDatabase db, BootstrapAction action) throws IOException {
-        int numApplied = 0;
-
-        // Begin an outer transaction.
-        db.beginTransaction();
-
-        // Bootstrap if no schema_migrations is present.
-        if (!hasMigrationsTable(db)) {
-            switch (action) {
-                case APPLY_SCHEMA:
-                    applySchema(db);
-                    break;
-                case CREATE_MIGRATIONS_TABLE:
-                    createMigrationsTable(db);
-                    break;
-                case NONE:
-                default:
-                    break;
-            }
-        }
-
-        // Apply Migrations.
-        try {
-            for (Migration migration : getPendingMigrations(db)) {
-                try {
-                    // Begin an inner Migration transaction.
-                    db.beginTransaction();
-
-                    // Apply the Migration.
-                    SQLParser.execute(db, migration);
-                    insertVersion(db, migration.getVersion());
-                    numApplied++;
-
-                    // Set the inner Migration transaction successful.
-                    db.setTransactionSuccessful();
-                } catch (SQLException e) {
-                    // Halt the migration process on error.
-                    e.printStackTrace();
-                    break;
-                } finally {
-                    // End the inner Migration transaction.
-                    db.endTransaction();
-                }
-            }
-            // Set the outer transaction successful.
-            db.setTransactionSuccessful();
-        } finally {
-            // End the outer transaction.
-            db.endTransaction();
-        }
-        return numApplied;
     }
 }
