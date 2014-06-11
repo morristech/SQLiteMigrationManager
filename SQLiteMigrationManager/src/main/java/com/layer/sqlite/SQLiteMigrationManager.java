@@ -29,12 +29,12 @@ public class SQLiteMigrationManager {
 
     /**
      * `BootstrapAction` tells SQLiteMigrationManager which action to take when no
-     * schema_migrations table is found during a call to manageSchema().
+     * `schema_migrations` table is found during a call to manageSchema().
      * <p><ul>
-     * <li>NONE: Do nothing.  A SQLException will get thrown if no schema_migrations table is
+     * <li>NONE: Do nothing.  A SQLException will get thrown if no `schema_migrations` table is
      * created by the first migration.</li>
      * <li>APPLY_SCHEMA: Load and apply a Schema from the DataSource set.</li>
-     * <li>CREATE_MIGRATIONS_TABLE: Create the schema_migrations table.</li>
+     * <li>CREATE_MIGRATIONS_TABLE: Create the `schema_migrations` table.</li>
      * </ul></p>
      */
     public static enum BootstrapAction {
@@ -67,7 +67,7 @@ public class SQLiteMigrationManager {
         // Begin an outer transaction.
         db.beginTransaction();
 
-        // Bootstrap if no schema_migrations is present.
+        // Bootstrap if no `schema_migrations` is present.
         if (!hasMigrationsTable(db)) {
             switch (action) {
                 case APPLY_SCHEMA:
@@ -279,14 +279,15 @@ public class SQLiteMigrationManager {
     }
 
     /**
-     * Loads the lowest version number from the schema_migrations table, returns NO_VERSIONS if the
-     * migrations table is empty, or throws an SQLException if the table isn't present.  The origin
-     * version number tells the manageSchema() method which old migrations it can safely ignore
-     * (because they were already applied on the bootstrapped schema deployed on this device).
+     * Loads the lowest version number from the `schema_migrations` table, returns NO_VERSIONS if
+     * the migrations table is empty, or throws an SQLException if the table isn't present.  The
+     * origin version number tells the manageSchema() method which old migrations it can safely
+     * ignore (because they were already applied on the bootstrapped schema deployed on this
+     * device).
      *
      * @param db Database from which to load the origin version.
-     * @return The lowest version present or NO_VERSIONS of the schema_migrations table is empty.
-     * @throws android.database.SQLException When no schema_migrations table is present.
+     * @return The lowest version present or NO_VERSIONS of the `schema_migrations` table is empty.
+     * @throws android.database.SQLException When no `schema_migrations` table is present.
      */
     public long getOriginVersion(SQLiteDatabase db) throws SQLException {
         Cursor cursor = null;
@@ -305,13 +306,14 @@ public class SQLiteMigrationManager {
     }
 
     /**
-     * Loads the current version number from the schema_migrations table, returns NO_VERSIONS if
+     * Loads the current version number from the `schema_migrations` table, returns NO_VERSIONS if
      * the migrations table is empty, or throws an SQLException if the table isn't present.  The
-     * current version number is the maximum version in the schema_migrations table.
+     * current version number is the maximum version in the `schema_migrations` table.
      *
      * @param db Database from which to load the current version.
-     * @return The highest version present or NO_VERSIONS of the schema_migrations table is empty.
-     * @throws android.database.SQLException When no schema_migrations table is present.
+     * @return The highest version present or NO_VERSIONS of the `schema_migrations` table is
+     * empty.
+     * @throws android.database.SQLException When no `schema_migrations` table is present.
      */
     public long getCurrentVersion(SQLiteDatabase db) throws SQLException {
         Cursor cursor = null;
@@ -335,7 +337,7 @@ public class SQLiteMigrationManager {
      *
      * @param db Database from which to load versions.
      * @return An ordered set of all versions applied.
-     * @throws android.database.SQLException When no schema_migrations table is present.
+     * @throws android.database.SQLException When no `schema_migrations` table is present.
      */
     public LinkedHashSet<Long> getAppliedVersions(SQLiteDatabase db) throws SQLException {
         Cursor cursor = null;
