@@ -1,13 +1,14 @@
 SQLiteMigrationManager
 ======================
 
-**A lightweight schema management system for Android [SQLiteDatabase](http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html).**
+**A lightweight schema management system for Android [SQLiteDatabase](http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html) databases.**
 
 ## Features
 
 * Supports the creation and management of a dedicated migrations table within the host database.
 * Applies migrations safely using SQLite transactions.
 * Basic migrations are implemented as flat SQL files with a naming convention that encodes the version and name.
+* Manages migrations loaded from extensible data sources.
 * Similar the [FMDBMigrationManager](https://github.com/layerhq/FMDBMigrationManager) for iOS.
 
 ## Implementation Details
@@ -86,21 +87,6 @@ At runtime, the ResourceDataSource looks in bundled Java resources for a schema 
 
 The DataSource interface can be implemented by other classes to supply Schema and Migration objects from other sources (e.g. compiled classes or http).
 
-### Creating the Migrations Table
-
-```java
-SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
-migrationManager.createMigrationsTable(db);
-```
-
-### Creating a SQL File Migration
-
-```sh
-$ touch "`ruby -e "puts Time.now.strftime('%Y%m%d%M%S%3N').to_i"`"_CreateMyAwesomeTable.sql
-```
-
-Now edit the file `*_CreateMyAwesomeTable.sql` in your editor of choice and add it to your JAR.
-
 ### Migrating a Database
 
 Usually, the only code modification required to get your SQLiteDatabase under managed migrations is to add `SQLiteMigrationManager.manageSchema()` to your `SQLiteOpenHelper.onCreate()` as follows:
@@ -120,6 +106,39 @@ public class Persistence extends SQLiteOpenHelper {
     ...
 }
 ```
+
+Methods useful for initialization can also be chained for convenience, for example:
+
+```java
+(new SQLiteMigrationManager())
+    .addDataSource(source1, source2)
+    .manageSchema(db, NoMigrationsTableAction.CREATE_MIGRATIONS_TABLE);
+```
+
+Chainable methods:
+
+```java
+addDataSource(DataSource... dataSource)
+createMigrationsTable(SQLiteDatabase db)
+applySchema(SQLiteDatabase db)
+```
+
+
+### Manually Creating the Migrations Table
+
+```java
+SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
+migrationManager.createMigrationsTable(db);
+```
+
+### Creating a SQL File Migration
+
+```sh
+$ touch "`ruby -e "puts Time.now.strftime('%Y%m%d%M%S%3N').to_i"`"_CreateMyAwesomeTable.sql
+```
+
+Now edit the file `*_CreateMyAwesomeTable.sql` in your editor of choice and add it to your JAR.
+
 
 ### Inspecting Schema State
 
