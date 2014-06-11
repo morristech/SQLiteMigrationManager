@@ -72,7 +72,7 @@ Determining what migrations should be applied to a given database is done using 
 
 SQLiteMigrationManager is designed to be very straightforward to use. The extensive unit test coverage that accompanies the library provides a great body of reference code. The sections below quickly sketch out how the most common tasks are accomplished with the library.
 
-### Supplying DataSources for Loading Schema and Migrations
+### Supplying DataSources for Loading Schemas and Migrations
 
 Instances of SQLiteMigrationManager use sets of DataSource objects to load schemas and migrations.  Multiple DataSource objects can be added to a single manager, allowing migrations to come from a number of sources.
 
@@ -84,7 +84,7 @@ public ResourceDataSource(String schemaPath, String migrationsPath);
 
 At runtime, the ResourceDataSource looks in bundled Java resources for a schema file matching the `schemaPath` and any resources whose path is prefixed with `migrationsPath`.
 
-The DataSource interface can be implemented by other classes to supply Schema and Migration objects from other sources (e.g. http).
+The DataSource interface can be implemented by other classes to supply Schema and Migration objects from other sources (e.g. compiled classes or http).
 
 ### Creating the Migrations Table
 
