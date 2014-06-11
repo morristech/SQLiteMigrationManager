@@ -63,9 +63,7 @@ public class Fixtures {
     }
 
     public static SQLiteMigrationManager getMigrationManagerMockDataSource() {
-        SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
-        migrationManager.addDataSource(mockBananaDataSource());
-        return migrationManager;
+        return (new SQLiteMigrationManager()).addDataSource(mockBananaDataSource());
     }
 
     public static DataSource mockDataSource(final String schemaSql,

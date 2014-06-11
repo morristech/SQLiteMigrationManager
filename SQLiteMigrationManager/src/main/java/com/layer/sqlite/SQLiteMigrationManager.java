@@ -32,9 +32,11 @@ public class SQLiteMigrationManager {
      * Adds a DataSource to the set of available sources for providing Schema and Migrations.
      *
      * @param dataSource DataSource to add to the set of managed sources.
+     * @return `this` for chaining.
      */
-    public void addDataSource(DataSource dataSource) {
+    public SQLiteMigrationManager addDataSource(DataSource dataSource) {
         mDataSources.add(dataSource);
+        return this;
     }
 
     /**
@@ -60,10 +62,12 @@ public class SQLiteMigrationManager {
      * Creates the managed `schema_migrations` table used for tracking applied migrations.
      *
      * @param db Database to create the `schema_migrations` table in.
+     * @return `this` for chaining.
      */
-    public void createMigrationsTable(SQLiteDatabase db) {
+    public SQLiteMigrationManager createMigrationsTable(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (" +
                 "version INTEGER UNIQUE NOT NULL)");
+        return this;
     }
 
     /**
@@ -103,15 +107,17 @@ public class SQLiteMigrationManager {
      * Bootstraps from the first available Schema found in the DataSource set.
      *
      * @param db Database to bootstrap.
+     * @return `this` for chaining.
      * @throws IllegalStateException         If no schemas were found in the DataSource set.
      * @throws java.io.IOException
      * @throws android.database.SQLException
      */
-    public void applySchema(SQLiteDatabase db) throws IOException {
+    public SQLiteMigrationManager applySchema(SQLiteDatabase db) throws IOException {
         if (!hasSchema()) {
-            return;
+            throw new IllegalStateException("No schemas in DataSource set.");
         }
         SQLParser.execute(db, getSchema());
+        return this;
     }
 
     /**
