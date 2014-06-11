@@ -89,7 +89,15 @@ The DataSource interface can be implemented by other classes to supply Schema an
 
 ### Migrating a Database
 
-Usually, the only code modification required to get your SQLiteDatabase under managed migrations is to add `SQLiteMigrationManager.manageSchema()` to SQLiteOpenHelper's `onConfigure()` as follows:
+The following code puts your SQLiteDatabase `db` under managed migrations when paired with a ResourceDataSource:
+
+```java
+(new SQLiteMigrationManager())
+    .addDataSource(new ResourceDataSource("schema/schema.sql", "migrations"))
+    .manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE);
+```
+
+It can be helpful to put migration management methods in SQLiteOpenHelper's `onConfigure()` as follows:
 
 ```java
 public class Persistence extends SQLiteOpenHelper {
@@ -120,6 +128,26 @@ public class Persistence extends SQLiteOpenHelper {
 ```java
 SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 migrationManager.createMigrationsTable(db);
+```
+
+### Manually Migrating
+
+Example: Adding DataSources, creating the default schema_migrations table, and managing migrations.
+
+```java
+(new SQLiteMigrationManager())
+    .addDataSource(dataSource1, dataSource2)
+    .createMigrationsTable(db)
+    .manageSchema(db, BootstrapAction.NONE);
+```
+
+Example: Adding DataSources, creating the default schema_migrations table, and managing migrations.
+
+```java
+(new SQLiteMigrationManager())
+    .addDataSource(dataSource1, dataSource2)
+    .applySchema(db)
+    .manageSchema(db, BootstrapAction.NONE);
 ```
 
 ### Creating a SQL File Migration
