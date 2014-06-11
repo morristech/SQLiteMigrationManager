@@ -1,0 +1,70 @@
+apply plugin: 'android-library'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+
+apply from: project.file("version.gradle")
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion "19.1.0"
+
+    defaultConfig {
+        applicationId "com.layer.sqlite"
+        minSdkVersion 14
+        targetSdkVersion 19
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            runProguard false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    androidTestCompile fileTree(dir: 'src/androidTest/libs', include: ['*.jar'])
+    androidTestCompile 'com.squareup:fest-android:1.0.7'
+}
+
+/*************************************************
+ * Uploading
+ *
+ * Specify:
+ *   -Purl=[MAVEN URL TO PUBLISH TO] e.g. "http://nexus.dev.layer.com:8081/nexus/content/repositories/releases" or "${System.env.HOME}/.m2/repository"
+ *   -Pusername=[USERNAME FOR MAVEN PUBLISH]
+ *   -Ppassword=[PASSWORD FOR MAVEN PUBLISH]
+ */
+
+ext {
+    mavenUrl = rootProject.hasProperty("url") ? rootProject.property("url") :
+            "${System.env.HOME}/.m2/repository"
+    mavenUsername = rootProject.hasProperty("username") ? rootProject.property("username") : null;
+    mavenPassword = rootProject.hasProperty("password") ? rootProject.property("password") : null;
+}
+
+task migrationManagerJar(type: Jar) {
+    from fileTree(dir: 'build/intermediates/classes/release').matching {
+        include 'com/layer/sqlite/**'
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifact migrationManagerJar
+            groupId "com.layer.sqlite"
+            artifactId "migrationmanager"
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = mavenUsername;
+                password = mavenPassword;
+            }
+            url = mavenUrl;
+        }
+    }
+}
