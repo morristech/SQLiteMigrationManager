@@ -271,7 +271,7 @@ public class SQLiteMigrationManager {
     }
 
     /**
-     * `NoMigrationsTableAction` tells SQLiteMigrationManager which action to take when no
+     * `BootstrapAction` tells SQLiteMigrationManager which action to take when no
      * schema_migrations table is found during a call to manageSchema().
      * <p><ul>
      * <li>NONE: Do nothing.  A SQLException will get thrown if no schema_migrations table is
@@ -280,7 +280,7 @@ public class SQLiteMigrationManager {
      * <li>CREATE_MIGRATIONS_TABLE: Create the schema_migrations table.</li>
      * </ul></p>
      */
-    public static enum NoMigrationsTableAction {
+    public static enum BootstrapAction {
         NONE,
         APPLY_SCHEMA,
         CREATE_MIGRATIONS_TABLE
@@ -289,7 +289,7 @@ public class SQLiteMigrationManager {
     /**
      * Applies pending Migrations in order.  If a migration throws an SQLException, the process is
      * halted at that point, but all previous migrations remain applied.  Behavior when no
-     * migrations table is present is controlled by the `NoMigrationsTableAction action` parameter.
+     * migrations table is present is controlled by the `BootstrapAction action` parameter.
      *
      * @param db     Database on which to operate.
      * @param action NoSchemaAction action to take when hasMigrationsTable() returns false.
@@ -297,12 +297,15 @@ public class SQLiteMigrationManager {
      * @see #getOriginVersion(android.database.sqlite.SQLiteDatabase)
      * @see #getMigrations()
      * @see #getAppliedVersions(android.database.sqlite.SQLiteDatabase)
-     * @see com.layer.sqlite.SQLiteMigrationManager.NoMigrationsTableAction
+     * @see com.layer.sqlite.SQLiteMigrationManager.BootstrapAction
      */
-    public int manageSchema(SQLiteDatabase db, NoMigrationsTableAction action) throws IOException {
+    public int manageSchema(SQLiteDatabase db, BootstrapAction action) throws IOException {
         int numApplied = 0;
+
+        // Begin an outer transaction.
         db.beginTransaction();
 
+        // Bootstrap if no schema_migrations is present.
         if (!hasMigrationsTable(db)) {
             switch (action) {
                 case APPLY_SCHEMA:
@@ -317,24 +320,33 @@ public class SQLiteMigrationManager {
             }
         }
 
+        // Apply Migrations.
         try {
             for (Migration migration : getPendingMigrations(db)) {
                 try {
+                    // Begin an inner Migration transaction.
                     db.beginTransaction();
+
+                    // Apply the Migration.
                     SQLParser.execute(db, migration);
                     insertVersion(db, migration.getVersion());
                     numApplied++;
+
+                    // Set the inner Migration transaction successful.
                     db.setTransactionSuccessful();
                 } catch (SQLException e) {
                     // Halt the migration process on error.
                     e.printStackTrace();
                     break;
                 } finally {
+                    // End the inner Migration transaction.
                     db.endTransaction();
                 }
             }
+            // Set the outer transaction successful.
             db.setTransactionSuccessful();
         } finally {
+            // End the outer transaction.
             db.endTransaction();
         }
         return numApplied;

@@ -130,7 +130,7 @@ public class ResourceDataSourceTests extends AndroidTestCase {
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
-            migrationManager.manageSchema(db, SQLiteMigrationManager.NoMigrationsTableAction.NONE);
+            migrationManager.manageSchema(db, SQLiteMigrationManager.BootstrapAction.NONE);
             failBecauseExceptionWasNotThrown(IllegalStateException.class);
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("No DataSources added");
@@ -139,7 +139,7 @@ public class ResourceDataSourceTests extends AndroidTestCase {
         // Create a DataSource with a schema and no table-creating migration.
         migrationManager.addDataSource(new ResourceDataSource("schema/schema.sql", "migrations"));
         assertThat(migrationManager
-                .manageSchema(db, SQLiteMigrationManager.NoMigrationsTableAction.APPLY_SCHEMA))
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.APPLY_SCHEMA))
                 .isEqualTo(6);
         assertTrue(migrationManager.hasMigrationsTable(db));
 
@@ -184,7 +184,7 @@ public class ResourceDataSourceTests extends AndroidTestCase {
 
         // Verify that 0 migrations remain.
         assertThat(migrationManager
-                .manageSchema(db, SQLiteMigrationManager.NoMigrationsTableAction.APPLY_SCHEMA))
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.APPLY_SCHEMA))
                 .isEqualTo(0);
     }
 }

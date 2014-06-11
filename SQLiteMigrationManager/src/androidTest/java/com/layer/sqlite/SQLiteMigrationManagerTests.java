@@ -13,7 +13,6 @@ import java.util.Set;
 
 import static com.layer.sqlite.Fixtures.assertStreamNotNull;
 
-import static com.layer.sqlite.SQLiteMigrationManager.NoMigrationsTableAction;
 import static com.layer.sqlite.Fixtures.getDatabase;
 import static com.layer.sqlite.Fixtures.getMigrationManagerMockDataSource;
 import static com.layer.sqlite.Fixtures.mockBananaDataSourceNoSchemaCreatesTable;
@@ -251,7 +250,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
-            migrationManager.manageSchema(db, NoMigrationsTableAction.NONE);
+            migrationManager.manageSchema(db, SQLiteMigrationManager.BootstrapAction.NONE);
             failBecauseExceptionWasNotThrown(IllegalStateException.class);
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("No DataSources added");
@@ -260,7 +259,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         // Create a DataSource with no schema but with a table-creating migration.
         migrationManager.addDataSource(mockBananaDataSourceNoSchemaCreatesTable());
         assertThat(migrationManager
-                .manageSchema(db, NoMigrationsTableAction.NONE))
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.NONE))
                 .isEqualTo(7);
         assertTrue(migrationManager.hasMigrationsTable(db));
 
@@ -305,7 +304,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
 
         // Verify that 0 migrations remain.
         assertThat(migrationManager
-                .manageSchema(db, NoMigrationsTableAction.NONE))
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.NONE))
                 .isEqualTo(0);
     }
 
@@ -314,7 +313,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
-            migrationManager.manageSchema(db, NoMigrationsTableAction.NONE);
+            migrationManager.manageSchema(db, SQLiteMigrationManager.BootstrapAction.NONE);
             failBecauseExceptionWasNotThrown(IllegalStateException.class);
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("No DataSources added");
@@ -323,7 +322,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         // Create a DataSource with a schema and no table-creating migration.
         migrationManager.addDataSource(mockBananaDataSourceSchemaNoTable());
         assertThat(migrationManager
-                .manageSchema(db, NoMigrationsTableAction.APPLY_SCHEMA))
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.APPLY_SCHEMA))
                 .isEqualTo(6);
         assertTrue(migrationManager.hasMigrationsTable(db));
 
@@ -368,7 +367,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
 
         // Verify that 0 migrations remain.
         assertThat(migrationManager
-                .manageSchema(db, NoMigrationsTableAction.APPLY_SCHEMA))
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.APPLY_SCHEMA))
                 .isEqualTo(0);
     }
 
@@ -377,7 +376,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
-            migrationManager.manageSchema(db, NoMigrationsTableAction.NONE);
+            migrationManager.manageSchema(db, SQLiteMigrationManager.BootstrapAction.NONE);
             failBecauseExceptionWasNotThrown(IllegalStateException.class);
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("No DataSources added");
@@ -386,7 +385,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         // Create a DataSource with neither schema nor table-creating migration.
         migrationManager.addDataSource(mockBananaDataSourceNoSchemaNoTable());
         assertThat(migrationManager
-                .manageSchema(db, NoMigrationsTableAction.CREATE_MIGRATIONS_TABLE))
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.CREATE_MIGRATIONS_TABLE))
                 .isEqualTo(6);
         assertTrue(migrationManager.hasMigrationsTable(db));
 
@@ -429,7 +428,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
 
         // Verify that 0 migrations remain.
         assertThat(migrationManager
-                .manageSchema(db, NoMigrationsTableAction.CREATE_MIGRATIONS_TABLE))
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.CREATE_MIGRATIONS_TABLE))
                 .isEqualTo(0);
     }
 
@@ -438,7 +437,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
 
         (new SQLiteMigrationManager())
                 .addDataSource(mockBananaDataSourceNoSchemaNoTable())
-                .manageSchema(db, NoMigrationsTableAction.CREATE_MIGRATIONS_TABLE);
+                .manageSchema(db, SQLiteMigrationManager.BootstrapAction.CREATE_MIGRATIONS_TABLE);
 
         // Verify applied versions.
         Cursor c = db.rawQuery("SELECT version FROM schema_migrations ORDER BY version", null);
