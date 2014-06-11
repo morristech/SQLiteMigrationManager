@@ -114,8 +114,6 @@ public class SQLiteMigrationManager {
         return numApplied;
     }
 
-    // DataSources
-
     /**
      * Adds a DataSource to the set of available sources for providing Schema and Migrations.
      *
@@ -126,8 +124,6 @@ public class SQLiteMigrationManager {
         mDataSources.addAll(Arrays.asList(dataSource));
         return this;
     }
-
-    // Migrations Table
 
     /**
      * Returns true if the `schema_migrations` table exists.
@@ -159,8 +155,6 @@ public class SQLiteMigrationManager {
                 "version INTEGER UNIQUE NOT NULL)");
         return this;
     }
-
-    // Schema
 
     /**
      * Returns true if any DataSource has a Schema.
@@ -211,8 +205,6 @@ public class SQLiteMigrationManager {
         SQLParser.execute(db, getSchema());
         return this;
     }
-
-    // Migrations
 
     /**
      * Generates a sorted list of Migration objects from all DataSources.
@@ -285,8 +277,6 @@ public class SQLiteMigrationManager {
         Collections.sort(pendingMigrations);
         return pendingMigrations;
     }
-
-    // Versions
 
     /**
      * Loads the lowest version number from the schema_migrations table, returns NO_VERSIONS if the
