@@ -16,6 +16,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -34,8 +35,8 @@ public class SQLiteMigrationManager {
      * @param dataSource DataSource to add to the set of managed sources.
      * @return `this` for chaining.
      */
-    public SQLiteMigrationManager addDataSource(DataSource dataSource) {
-        mDataSources.add(dataSource);
+    public SQLiteMigrationManager addDataSource(DataSource... dataSource) {
+        mDataSources.addAll(Arrays.asList(dataSource));
         return this;
     }
 
