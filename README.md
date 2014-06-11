@@ -139,13 +139,7 @@ SQLiteMigrationManager is tested using `AndroidTestCase` -- simply run `gradle c
 
 ## Credits
 
-SQLiteMigrationManager was crafted in San Francisco by Steven Jones during his work on [Layer](http://layer.com). At Layer, we are building the Communications Layer for the Internet. We value, support, and create works of Open Source engineering excellence.
-
-Blake Watters
-
-- http://github.com/blakewatters
-- http://twitter.com/blakewatters
-- blakewatters@gmail.com
+SQLiteMigrationManager was created in San Francisco by Steven Jones in collaboration with Blake Watters during their work at [Layer](http://layer.com). At Layer, we are building the Communications Layer for the Internet. We value, support, and create works of Open Source engineering excellence.
 
 ## License
 
