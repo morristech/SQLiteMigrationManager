@@ -98,7 +98,7 @@ public class Persistence extends SQLiteOpenHelper {
         SQLiteMigrationManager manager = new SQLiteMigrationManager();
         manager.addDataSource(new ResourceDataSource("schema/schema.sql", "migrations"));
         try {
-            manager.manageSchema(db, NoMigrationsTableAction.APPLY_SCHEMA);
+            manager.manageSchema(db, BootstrapAction.APPLY_SCHEMA);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -107,12 +107,22 @@ public class Persistence extends SQLiteOpenHelper {
 }
 ```
 
-Methods useful for initialization can also be chained for convenience, for example:
+#### BootstrapAction
+
+`SQLiteMigrationManager.manageSchema()` takes an BootstrapAction enum object that tells manageSchema what to do when no schema_migrations table exists.
+
+* **BootstrapAction.NONE**: Do nothing.  This is appropriate when the first Migration creates the schema_migrations table.
+* **BootstrapAction.APPLY_SCHEMA**: Call `applySchema()`.  This is appropriate when the Schema object creates the schema_migrations table.
+* **BootstrapAction.CREATE_MIGRATIONS_TABLE**: Call `createMigrationsTable()`.  This is appropriate when neither Schema nor Migration creates the schema_migrations table.
+
+#### Chaining
+
+Methods useful for initialization can also be chained for convenience, e.g.:
 
 ```java
 (new SQLiteMigrationManager())
     .addDataSource(source1, source2)
-    .manageSchema(db, NoMigrationsTableAction.CREATE_MIGRATIONS_TABLE);
+    .manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE);
 ```
 
 Chainable methods:
@@ -122,7 +132,6 @@ addDataSource(DataSource... dataSource)
 createMigrationsTable(SQLiteDatabase db)
 applySchema(SQLiteDatabase db)
 ```
-
 
 ### Manually Creating the Migrations Table
 
