@@ -64,6 +64,23 @@ public abstract class Migration implements Comparable<Migration> {
     public abstract InputStream getStream();
 
     /**
+     * Migrations are equal when their versions are equal.
+     *
+     * @param o The other object to compare to.
+     * @return True of the other object is a Migration and has equal versions.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Migration)) {
+            return false;
+        }
+
+        Migration other = (Migration) o;
+
+        return getVersion().equals(other.getVersion());
+    }
+
+    /**
      * Migrations are sorted by version.
      *
      * @param migration The other Migration with which to compare versions.
@@ -72,5 +89,15 @@ public abstract class Migration implements Comparable<Migration> {
     @Override
     public int compareTo(Migration migration) {
         return getVersion().compareTo(migration.getVersion());
+    }
+
+    /**
+     * Migrations are equal when their versions are equal.
+     *
+     * @return The hashcode of this Migration's version.
+     */
+    @Override
+    public int hashCode() {
+        return getVersion().hashCode();
     }
 }
