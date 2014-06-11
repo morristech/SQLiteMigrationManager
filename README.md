@@ -124,7 +124,7 @@ List<Migration> getPendingMigrations(SQLiteDatabase db);
 
 ## Installation Via Gradle / Maven
 
-Add the following dependency to `build.gradle`:
+Without parameters, `gradle publish` will publish a jar to your local Maven.  After doing so, you can include SQLiteMigrationManager in another project by adding the following dependency to its `build.gradle`:
 
 ```gradle
 dependencies {
