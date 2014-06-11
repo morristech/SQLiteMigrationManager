@@ -8,7 +8,6 @@ SQLiteMigrationManager
 * Supports the creation and management of a dedicated migrations table within the host database.
 * Applies migrations safely using SQLite transactions.
 * Basic migrations are implemented as flat SQL files with a naming convention that encodes the version and name.
-* Can take schema and migration bundles directly from [MonkeyButler](https://github.com/layerhq/monkey_butler).
 * Similar the [FMDBMigrationManager](https://github.com/layerhq/FMDBMigrationManager) for iOS.
 
 ## Implementation Details
