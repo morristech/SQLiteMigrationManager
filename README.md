@@ -72,7 +72,7 @@ Determining what migrations should be applied to a given database is done using 
 
 SQLiteMigrationManager is designed to be very straightforward to use. The extensive unit test coverage that accompanies the library provides a great body of reference code. The sections below quickly sketch out how the most common tasks are accomplished with the library.
 
-Note that instances of `SQLiteMigrationManager` maintain sets of `DataSource` objects which in turn supply `Schema` and `Migration` objects.  Typically, schema and migrations are bundled in a Java resources JAR and accessed via `ResourceDataSource`.
+Note that instances of `SQLiteMigrationManager` maintain sets of `DataSource` objects which in turn supply `Schema` and `Migration` objects.  Typically, schema and migrations are bundled in a Java resources JAR and accessed via `ResourceDataSource`, whose constructor takes a Java resource schema.sql path and migrations resource directory as arguments.
 
 ### Creating the Migrations Table
 
@@ -91,7 +91,7 @@ Now edit the file `*_CreateMyAwesomeTable.sql` in your editor of choice and add 
 
 ### Migrating a Database
 
-It is recommended that `SQLiteMigrationManager.manageSchema()` get called within `SQLiteOpenHelper.onCreate()` as follows:
+Usually, the only code modification required to get your SQLiteDatabase under managed migrations is to add `SQLiteMigrationManager.manageSchema()` to your `SQLiteOpenHelper.onCreate()` as follows:
 
 ```java
 public class Persistence extends SQLiteOpenHelper {
@@ -122,7 +122,6 @@ HashSet<Long> getAppliedVersions(SQLiteDatabase db);
 List<Migration> getPendingMigrations(SQLiteDatabase db);
 ```
 
-
 ## Installation Via Gradle / Maven
 
 Add the following dependency to `build.gradle`:
@@ -135,7 +134,7 @@ dependencies {
 
 ## Unit Tests
 
-SQLiteMigrationManager is tested using `AndroidTestCase` -- simply run `gradle connectedAndroidTest`
+SQLiteMigrationManager can be tested by running `gradle connectedAndroidTest` with an active simulator or device attached to your system.
 
 ## Credits
 
