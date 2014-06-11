@@ -89,16 +89,16 @@ The DataSource interface can be implemented by other classes to supply Schema an
 
 ### Migrating a Database
 
-Usually, the only code modification required to get your SQLiteDatabase under managed migrations is to add `SQLiteMigrationManager.manageSchema()` to your `SQLiteOpenHelper.onCreate()` as follows:
+Usually, the only code modification required to get your SQLiteDatabase under managed migrations is to add `SQLiteMigrationManager.manageSchema()` to SQLiteOpenHelper's `onConfigure()` as follows:
 
 ```java
 public class Persistence extends SQLiteOpenHelper {
     @Override
-    public void onCreate(SQLiteDatabase db) {
-        SQLiteMigrationManager manager = new SQLiteMigrationManager();
-        manager.addDataSource(new ResourceDataSource("schema/schema.sql", "migrations"));
+    public void onConfigure(SQLiteDatabase db) {
         try {
-            manager.manageSchema(db, BootstrapAction.APPLY_SCHEMA);
+            (new SQLiteMigrationManager())
+                .addDataSource(new ResourceDataSource("schema/schema.sql", "migrations"))
+                .manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -114,24 +114,6 @@ public class Persistence extends SQLiteOpenHelper {
 * **BootstrapAction.NONE**: Do nothing.  This is appropriate when the first Migration creates the schema_migrations table.
 * **BootstrapAction.APPLY_SCHEMA**: Call `applySchema()`.  This is appropriate when the Schema object creates the schema_migrations table.
 * **BootstrapAction.CREATE_MIGRATIONS_TABLE**: Call `createMigrationsTable()`.  This is appropriate when neither Schema nor Migration creates the schema_migrations table.
-
-#### Chaining
-
-Methods useful for initialization can also be chained for convenience, e.g.:
-
-```java
-(new SQLiteMigrationManager())
-    .addDataSource(source1, source2)
-    .manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE);
-```
-
-Chainable methods:
-
-```java
-addDataSource(DataSource... dataSource)
-createMigrationsTable(SQLiteDatabase db)
-applySchema(SQLiteDatabase db)
-```
 
 ### Manually Creating the Migrations Table
 
