@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -132,12 +133,16 @@ public class SQLiteMigrationManager {
             throw new IllegalStateException("No DataSources added");
         }
 
-        List<Migration> migrations = new LinkedList<Migration>();
+        // Use Sets to prevent duplicate Migrations.
+        Set<Migration> migrations = new HashSet<Migration>();
         for (DataSource dataSource : mDataSources) {
             migrations.addAll(dataSource.getMigrations());
         }
-        Collections.sort(migrations);
-        return migrations;
+
+        // Return a sorted List.
+        List<Migration> sortedMigrations = new LinkedList<Migration>(migrations);
+        Collections.sort(sortedMigrations);
+        return sortedMigrations;
     }
 
     /**
