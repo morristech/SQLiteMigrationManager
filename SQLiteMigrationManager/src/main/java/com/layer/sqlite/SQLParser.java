@@ -11,7 +11,6 @@ import com.foundationdb.sql.parser.StatementNode;
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
 
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
 import java.io.IOException;
@@ -21,17 +20,17 @@ import java.util.List;
 import java.util.Scanner;
 public class SQLParser {
     public static void execute(SQLiteDatabase db, Schema schema)
-            throws IOException, StandardException {
+            throws IOException, SQLParserException {
         execute(db, schema.getStream());
     }
 
     public static void execute(SQLiteDatabase db, Migration migration)
-            throws IOException, StandardException {
+            throws IOException, SQLParserException {
         execute(db, migration.getStream());
     }
 
     private static void execute(SQLiteDatabase db, InputStream in)
-            throws IOException, SQLException, StandardException {
+            throws IOException, SQLParserException {
         try {
             execute(db, toStatements(in));
         } finally {
@@ -47,7 +46,7 @@ public class SQLParser {
      * @return A list of Statements parsed from the given InputStream.
      * @throws StandardException
      */
-    public static List<String> toStatements(InputStream in) throws StandardException {
+    public static List<String> toStatements(InputStream in) throws SQLParserException {
         return toStatements(new Scanner(in, "UTF-8").useDelimiter("\\A").next());
     }
 
@@ -58,14 +57,18 @@ public class SQLParser {
      * @return A list of Statements parsed from the given String.
      * @throws StandardException
      */
-    public static List<String> toStatements(String sqlText) throws StandardException {
-        List<StatementNode> nodes = (new com.foundationdb.sql.parser.SQLParser())
-                .parseStatements(sqlText);
-        List<String> statements = new LinkedList<String>();
-        for (StatementNode node : nodes) {
-            statements.add(sqlText.substring(node.getBeginOffset(), node.getEndOffset() + 1));
+    public static List<String> toStatements(String sqlText) throws SQLParserException {
+        try {
+            List<StatementNode> nodes = (new com.foundationdb.sql.parser.SQLParser())
+                    .parseStatements(sqlText);
+            List<String> statements = new LinkedList<String>();
+            for (StatementNode node : nodes) {
+                statements.add(sqlText.substring(node.getBeginOffset(), node.getEndOffset() + 1));
+            }
+            return statements;
+        } catch (StandardException e) {
+            throw new SQLParserException(e.getMessage());
         }
-        return statements;
     }
 
     /**
@@ -73,13 +76,17 @@ public class SQLParser {
      *
      * @param db         The database on which to execute statements.
      * @param statements The list of SQL statement strings to execute.
-     * @throws java.io.IOException
      * @throws IllegalArgumentException If a statement cannot be parsed.
      */
-    public static void execute(SQLiteDatabase db, List<String> statements)
-            throws IOException, SQLException {
+    public static void execute(SQLiteDatabase db, List<String> statements) {
         for (String statement : statements) {
             db.execSQL(statement);
+        }
+    }
+
+    public static class SQLParserException extends StandardException {
+        public SQLParserException(String msg) {
+            super(msg);
         }
     }
 }
