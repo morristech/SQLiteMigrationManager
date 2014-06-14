@@ -6,6 +6,8 @@
  */
 package com.layer.sqlite;
 
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.StatementNode;
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
 
@@ -14,119 +16,70 @@ import android.database.sqlite.SQLiteDatabase;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
-import java.util.regex.Pattern;
 public class SQLParser {
-    public static void execute(SQLiteDatabase db, Schema schema) throws IOException {
+    public static void execute(SQLiteDatabase db, Schema schema)
+            throws IOException, StandardException {
         execute(db, schema.getStream());
     }
 
-    public static void execute(SQLiteDatabase db, Migration migration) throws IOException {
+    public static void execute(SQLiteDatabase db, Migration migration)
+            throws IOException, StandardException {
         execute(db, migration.getStream());
     }
 
     private static void execute(SQLiteDatabase db, InputStream in)
-            throws IOException, SQLException {
+            throws IOException, SQLException, StandardException {
         try {
-            Execute.statements(db, Statements.fromStream(in));
+            execute(db, toStatements(in));
         } finally {
             in.close();
         }
     }
 
     /**
-     * Generates lists of statements for execution from various sources.
+     * Reads the entire InputStream into a String, and returns the list of individual SQL
+     * statements within.
+     *
+     * @param in InputStream to parse into Statements.
+     * @return A list of Statements parsed from the given InputStream.
+     * @throws StandardException
      */
-    public static class Statements {
-        public static List<String> fromStream(InputStream in) {
-            String contents = new Scanner(in, "UTF-8").useDelimiter("\\A").next();
-
-            // Remove block comments
-            Pattern blockComment = Pattern.compile("/\\*.*?\\*/",
-                    Pattern.MULTILINE | Pattern.DOTALL);
-            contents = blockComment.matcher(contents).replaceAll("");
-
-            // Remove line comments
-            Pattern lineComment = Pattern.compile("^\\s*--.*?$",
-                    Pattern.MULTILINE | Pattern.DOTALL);
-            contents = lineComment.matcher(contents).replaceAll("");
-
-            // TODO: make a parser smarter than simply looking for empty lines to split on
-            return Arrays.asList(contents.split("(\\s*\\r?\\n\\s*){2,}"));
-        }
+    public static List<String> toStatements(InputStream in) throws StandardException {
+        return toStatements(new Scanner(in, "UTF-8").useDelimiter("\\A").next());
     }
 
     /**
-     * Executes lists of statements.
+     * Parses a SQL string into a list of individual SQL statements.
+     *
+     * @param sqlText Sting to parse into Statements.
+     * @return A list of Statements parsed from the given String.
+     * @throws StandardException
      */
-    private static class Execute {
-        private final static Set<String> COMMENT_PREFIXES = new HashSet<String>(
-                Arrays.asList("--"));
-        private final static Set<String> EXEC_PREFIXES = new HashSet<String>(
-                Arrays.asList("ALTER", "CREATE", "DELETE", "DROP", "INSERT", "UPDATE"));
-        private final static Set<String> QUERY_PREFIXES = new HashSet<String>(
-                Arrays.asList("PRAGMA"));
-
-        /**
-         * Returns true if the provided statement begins with a prefix from a given prefixes set.
-         *
-         * @param prefixes
-         * @param statement
-         * @return
-         */
-        private static boolean isPrefixMatch(Set<String> prefixes, String statement) {
-            String upper = statement.toUpperCase();
-            for (String prefix : prefixes) {
-                if (upper.startsWith(prefix)) {
-                    return true;
-                }
-            }
-            return false;
+    public static List<String> toStatements(String sqlText) throws StandardException {
+        List<StatementNode> nodes = (new com.foundationdb.sql.parser.SQLParser())
+                .parseStatements(sqlText);
+        List<String> statements = new LinkedList<String>();
+        for (StatementNode node : nodes) {
+            statements.add(sqlText.substring(node.getBeginOffset(), node.getEndOffset() + 1));
         }
+        return statements;
+    }
 
-        /**
-         * Executes each statement in the statements list.  The actual SQLiteDatabase method used
-         * to execute each statement is determined by comparing the beginning of the statement to
-         * prefixes in the COMMENT_PREFIXES, EXEC_PREFIXES, and QUERY_PREFIXES sets.
-         *
-         * @param db         The database on which to execute statements.
-         * @param statements The list of statements to execute.
-         * @throws java.io.IOException
-         * @throws IllegalArgumentException If a statement cannot be parsed.
-         */
-        public static void statements(SQLiteDatabase db, List<String> statements)
-                throws IOException, SQLException {
-            for (String statement : statements) {
-                statement = statement.trim();
-
-                if (statement.isEmpty()) {
-                    // Skip empty statements.
-                    continue;
-                }
-
-                if (isPrefixMatch(COMMENT_PREFIXES, statement)) {
-                    // Skip comments.
-                    continue;
-                }
-
-                if (isPrefixMatch(EXEC_PREFIXES, statement)) {
-                    // Execute.
-                    db.execSQL(statement);
-                    continue;
-                }
-
-                if (isPrefixMatch(QUERY_PREFIXES, statement)) {
-                    // Query.
-                    db.rawQuery(statement, null);
-                    continue;
-                }
-
-                throw new IllegalArgumentException("Cannot parse statement: " + statement);
-            }
+    /**
+     * Executes each SQL statement in the statements list.
+     *
+     * @param db         The database on which to execute statements.
+     * @param statements The list of SQL statement strings to execute.
+     * @throws java.io.IOException
+     * @throws IllegalArgumentException If a statement cannot be parsed.
+     */
+    public static void execute(SQLiteDatabase db, List<String> statements)
+            throws IOException, SQLException {
+        for (String statement : statements) {
+            db.execSQL(statement);
         }
     }
 }

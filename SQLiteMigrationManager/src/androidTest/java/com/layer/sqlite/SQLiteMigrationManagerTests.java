@@ -1,5 +1,6 @@
 package com.layer.sqlite;
 
+import com.foundationdb.sql.StandardException;
 import com.layer.sqlite.datasource.ResourceDataSource;
 import com.layer.sqlite.migrations.Migration;
 
@@ -573,6 +574,8 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
                     migrationManager.manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE);
                 } catch (IOException e) {
                     fail("IOException thrown: " + e.getMessage());
+                } catch (StandardException e) {
+                    fail("StandardException thrown: " + e.getMessage());
                 }
             }
 
