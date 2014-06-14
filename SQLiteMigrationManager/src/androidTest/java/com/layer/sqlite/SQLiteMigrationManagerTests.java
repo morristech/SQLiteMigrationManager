@@ -574,8 +574,9 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
                     migrationManager.manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE);
                 } catch (IOException e) {
                     fail("IOException thrown: " + e.getMessage());
-                } catch (StandardException e) {
-                    fail("StandardException thrown: " + e.getMessage());
+                } catch (SQLParser.SQLParserException e) {
+                    fail("SQLParserException thrown: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
 

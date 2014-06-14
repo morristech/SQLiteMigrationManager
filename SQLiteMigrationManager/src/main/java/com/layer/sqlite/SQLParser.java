@@ -12,6 +12,7 @@ import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
 
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,6 +68,7 @@ public class SQLParser {
             }
             return statements;
         } catch (StandardException e) {
+            e.printStackTrace();
             throw new SQLParserException(e.getMessage());
         }
     }
