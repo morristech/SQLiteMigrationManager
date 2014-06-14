@@ -84,7 +84,7 @@ public class SQLParser {
         }
     }
 
-    public static class SQLParserException extends StandardException {
+    public static class SQLParserException extends Exception {
         public SQLParserException(String msg) {
             super(msg);
         }

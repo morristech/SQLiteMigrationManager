@@ -6,7 +6,6 @@
  */
 package com.layer.sqlite;
 
-import com.foundationdb.sql.StandardException;
 import com.layer.sqlite.datasource.DataSource;
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
@@ -63,7 +62,7 @@ public class SQLiteMigrationManager {
      * @see com.layer.sqlite.SQLiteMigrationManager.BootstrapAction
      */
     public int manageSchema(SQLiteDatabase db, BootstrapAction action)
-            throws IOException, StandardException {
+            throws IOException, SQLParser.SQLParserException {
         int numApplied = 0;
 
         // Begin an outer transaction.
@@ -201,7 +200,7 @@ public class SQLiteMigrationManager {
      * @throws android.database.SQLException
      */
     public SQLiteMigrationManager applySchema(SQLiteDatabase db)
-            throws IOException, StandardException {
+            throws IOException, SQLParser.SQLParserException {
         if (!hasSchema()) {
             throw new IllegalStateException("No schemas in DataSource set.");
         }
