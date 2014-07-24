@@ -1,6 +1,7 @@
 apply plugin: 'android-library'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
+apply plugin: 'git-repo'
 
 apply from: project.file("version.gradle")
 
@@ -14,12 +15,6 @@ android {
         targetSdkVersion 19
         versionCode 1
         versionName "1.0"
-    }
-    buildTypes {
-        release {
-            runProguard false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
     }
 }
 
@@ -37,13 +32,6 @@ dependencies {
  *   -Ppassword=[PASSWORD FOR MAVEN PUBLISH]
  */
 
-ext {
-    mavenUrl = rootProject.hasProperty("url") ? rootProject.property("url") :
-            "${System.env.HOME}/.m2/repository"
-    mavenUsername = rootProject.hasProperty("username") ? rootProject.property("username") : null;
-    mavenPassword = rootProject.hasProperty("password") ? rootProject.property("password") : null;
-}
-
 task migrationManagerJar(type: Jar) {
     from fileTree(dir: 'build/intermediates/classes/release').matching {
         include 'com/layer/sqlite/**'
@@ -60,11 +48,7 @@ publishing {
     }
     repositories {
         maven {
-            credentials {
-                username = mavenUsername;
-                password = mavenPassword;
-            }
-            url = mavenUrl;
+            url "file://${rootProject.hasProperty("gitRepoHome") ? property("gitRepoHome") : "${System.env.HOME}/.gitRepos"}/${rootProject.hasProperty("org") ? property("org") : ""}/${rootProject.hasProperty("repo") ? property("repo") : ""}/releases"
         }
     }
 }

@@ -27,7 +27,7 @@ Each row in `schema_migrations` corresponds to a single migration that has been 
 
 Timestamps are preferable to a monotonically incrementing integers because they better support branched workflows as you do not need to re-sequence migrations when multiple lines of development are brought together. Timestamps with sufficient levels of precision are ensured a very lowpotential for conflict and are trivially sortable.
 
-The recommended format for timestamped migrations uses sub-second precision and can be generated via the `date` utility on platforms that provide GNU coreutils via `date +"%Y%m%d%M%S%3N"`. Unfortunately the build of `date` that ships with Mac OS X does not natively support this format. It can instead be generated via an invocation of Ruby: `ruby -e "puts Time.now.strftime('%Y%m%d%M%S%3N').to_i"`.
+The recommended format for timestamped migrations uses sub-second precision and can be generated via the `date` utility on platforms that provide GNU coreutils via `date +"%Y%m%d%H%M%S%3N"`. Unfortunately the build of `date` that ships with Mac OS X does not natively support this format. It can instead be generated via an invocation of Ruby: `ruby -e "puts Time.now.strftime('%Y%m%d%H%M%S%3N').to_i"`.
 
 ### Migration Naming
 
@@ -153,7 +153,7 @@ Example: Adding DataSources, creating a schema_migrations table through an appli
 ### Creating a SQL File Migration
 
 ```sh
-$ touch "`ruby -e "puts Time.now.strftime('%Y%m%d%M%S%3N').to_i"`"_CreateMyAwesomeTable.sql
+$ touch "`ruby -e "puts Time.now.strftime('%Y%m%d%H%M%S%3N').to_i"`"_CreateMyAwesomeTable.sql
 ```
 
 Now edit the file `*_CreateMyAwesomeTable.sql` in your editor of choice and add it to your JAR.
