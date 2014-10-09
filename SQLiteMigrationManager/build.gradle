@@ -26,10 +26,7 @@ dependencies {
 /*************************************************
  * Uploading
  *
- * Specify:
- *   -Purl=[MAVEN URL TO PUBLISH TO] e.g. "http://nexus.dev.layer.com:8081/nexus/content/repositories/releases" or "${System.env.HOME}/.m2/repository"
- *   -Pusername=[USERNAME FOR MAVEN PUBLISH]
- *   -Ppassword=[PASSWORD FOR MAVEN PUBLISH]
+ * gradle -Porg=layerhq -Prepo=maven-private -PgitRepoHome=/Users/steven/.gitRepos clean build publish
  */
 
 task migrationManagerJar(type: Jar) {
