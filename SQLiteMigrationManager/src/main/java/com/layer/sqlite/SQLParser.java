@@ -67,7 +67,7 @@ public class SQLParser {
         private final static Set<String> COMMENT_PREFIXES = new HashSet<String>(
                 Arrays.asList("--"));
         private final static Set<String> EXEC_PREFIXES = new HashSet<String>(
-                Arrays.asList("ALTER", "CREATE", "DELETE", "DROP", "INSERT", "UPDATE"));
+                Arrays.asList("ALTER", "ANALYZE", "CREATE", "DELETE", "DROP", "INSERT", "UPDATE"));
         private final static Set<String> QUERY_PREFIXES = new HashSet<String>(
                 Arrays.asList("PRAGMA"));
 
