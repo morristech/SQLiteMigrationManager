@@ -134,7 +134,7 @@ public class SQLiteMigrationManager {
     public boolean hasMigrationsTable(SQLiteDatabase db) {
         Cursor c = null;
         try {
-            c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            c = db.rawQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
                     new String[]{"schema_migrations"});
             return (c.getCount() > 0);
         } finally {

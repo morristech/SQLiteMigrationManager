@@ -9,6 +9,7 @@ package com.layer.sqlite;
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
 
+import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -121,7 +122,10 @@ public class SQLParser {
 
                 if (isPrefixMatch(QUERY_PREFIXES, statement)) {
                     // Query.
-                    db.rawQuery(statement, null);
+                    Cursor cursor = db.rawQuery(statement, null);
+                    if (cursor != null) {
+                        cursor.close();
+                    }
                     continue;
                 }
 
