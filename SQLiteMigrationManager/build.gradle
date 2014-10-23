@@ -3,8 +3,6 @@ apply plugin: 'maven'
 apply plugin: 'maven-publish'
 apply plugin: 'git-repo'
 
-apply from: project.file("version.gradle")
-
 android {
     compileSdkVersion 19
     buildToolsVersion "19.1.0"
@@ -25,27 +23,41 @@ dependencies {
 
 /*************************************************
  * Uploading
- *
- * gradle -Porg=layerhq -Prepo=maven-private -PgitRepoHome=/Users/steven/.gitRepos clean build publish
  */
 
-task migrationManagerJar(type: Jar) {
+task bundleJar(type: Jar) {
     from fileTree(dir: 'build/intermediates/classes/release').matching {
         include 'com/layer/sqlite/**'
     }
 }
 
+task sourceJar(type: Jar) {
+    from android.sourceSets.main
+}
+
+project.ext {
+    gitRepoHome = project.hasProperty("gitRepoHome") ? project.getProperty("gitRepoHome") : "${System.env.HOME}/.gitRepos"
+    org = project.hasProperty("org") ? project.getProperty("org") : "layerhq"
+    repo = project.hasProperty("repo") ? project.getProperty("repo") : "maven-private"
+}
+
 publishing {
     publications {
-        maven(MavenPublication) {
-            artifact migrationManagerJar
+        mavenJava(MavenPublication) {
             groupId "com.layer.sqlite"
             artifactId "migrationmanager"
+            artifact bundleJar
+
+            artifact sourceJar {
+                classifier "sources"
+            }
         }
     }
     repositories {
         maven {
-            url "file://${rootProject.hasProperty("gitRepoHome") ? property("gitRepoHome") : "${System.env.HOME}/.gitRepos"}/${rootProject.hasProperty("org") ? property("org") : ""}/${rootProject.hasProperty("repo") ? property("repo") : ""}/releases"
+            url "file://$project.ext.gitRepoHome/$project.ext.org/$project.ext.repo/releases"
         }
     }
 }
+
+
