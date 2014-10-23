@@ -41,6 +41,10 @@ project.ext {
     repo = project.hasProperty("repo") ? project.getProperty("repo") : "maven-private"
 }
 
+public String getLocalGit() {
+    return "$project.ext.gitRepoHome/$project.ext.org/$project.ext.repo"
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -55,9 +59,15 @@ publishing {
     }
     repositories {
         maven {
-            url "file://$project.ext.gitRepoHome/$project.ext.org/$project.ext.repo/releases"
+            url "file://${getLocalGit()}/releases"
         }
     }
 }
 
+task cleanLocalGit(type: Delete) {
+    doFirst {
+        println "Deleting local git repo `${getLocalGit()}`..."
+        delete "${getLocalGit()}"
+    }
+}
 
