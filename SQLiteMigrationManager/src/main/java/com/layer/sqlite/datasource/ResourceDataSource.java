@@ -6,6 +6,8 @@
  */
 package com.layer.sqlite.datasource;
 
+import android.content.Context;
+
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.migrations.ResourceMigration;
 import com.layer.sqlite.schema.ResourceSchema;
@@ -24,11 +26,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
 public class ResourceDataSource implements DataSource {
+    private final Context mContext;
     private final String mSchemaPath;
     private final String mMigrationsPath;
 
-    public ResourceDataSource(String schemaPath, String migrationsPath) {
+    public ResourceDataSource(Context context, String schemaPath, String migrationsPath) {
+        mContext = context;
         mSchemaPath = schemaPath;
         mMigrationsPath = migrationsPath;
     }
@@ -51,7 +56,7 @@ public class ResourceDataSource implements DataSource {
     @Override
     public Schema getSchema() {
         try {
-            return new ResourceSchema(mSchemaPath);
+            return new ResourceSchema(mContext, mSchemaPath);
         } catch (IllegalArgumentException e) {
             return null;
         }
@@ -77,7 +82,7 @@ public class ResourceDataSource implements DataSource {
     public List<Migration> getMigrations() {
         LinkedHashMap<String, Migration> migrations = new LinkedHashMap<String, Migration>();
         try {
-            Enumeration<URL> target = getClassLoader().getResources(mSchemaPath);
+            Enumeration<URL> target = mContext.getClassLoader().getResources(mSchemaPath);
             while (target.hasMoreElements()) {
                 URL url = target.nextElement();
                 URLConnection connection = url.openConnection();
@@ -94,7 +99,7 @@ public class ResourceDataSource implements DataSource {
                             if (migrations.containsKey(path)) {
                                 continue;
                             }
-                            migrations.put(path, new ResourceMigration(path));
+                            migrations.put(path, new ResourceMigration(mContext, path));
                         }
                     }
                 } else {
@@ -111,7 +116,7 @@ public class ResourceDataSource implements DataSource {
                         if (migrations.containsKey(path)) {
                             continue;
                         }
-                        migrations.put(path, new ResourceMigration(path));
+                        migrations.put(path, new ResourceMigration(mContext, path));
                     }
                 }
             }
@@ -124,15 +129,11 @@ public class ResourceDataSource implements DataSource {
         return null;
     }
 
-    public static ClassLoader getClassLoader() {
-        return Thread.currentThread().getContextClassLoader();
+    public static boolean resourceExists(Context context, String path) {
+        return context.getClassLoader().getResource(path) != null;
     }
 
-    public static boolean resourceExists(String path) {
-        return getClassLoader().getResource(path) != null;
-    }
-
-    public static InputStream getResourceAsStream(String path) {
-        return getClassLoader().getResourceAsStream(path);
+    public static InputStream getResourceAsStream(Context context, String path) {
+        return context.getClassLoader().getResourceAsStream(path);
     }
 }

@@ -18,63 +18,63 @@ import static org.fest.assertions.api.Assertions.failBecauseExceptionWasNotThrow
 public class ResourceDataSourceTests extends AndroidTestCase {
     public void testInvalidMigrationName() throws Exception {
         try {
-            new ResourceMigration("migrations/bad");
+            new ResourceMigration(getContext(), "migrations/bad");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
         }
 
         try {
-            new ResourceMigration("migrations/bad.sql");
+            new ResourceMigration(getContext(), "migrations/bad.sql");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
         }
 
         try {
-            new ResourceMigration("migrations/_bad.sql");
+            new ResourceMigration(getContext(), "migrations/_bad.sql");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
         }
 
         try {
-            new ResourceMigration("migrations/0");
+            new ResourceMigration(getContext(), "migrations/0");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
         }
 
         try {
-            new ResourceMigration("migrations/0_");
+            new ResourceMigration(getContext(), "migrations/0_");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
         }
 
         try {
-            new ResourceMigration("migrations/0_.sql");
+            new ResourceMigration(getContext(), "migrations/0_.sql");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
         }
 
         try {
-            new ResourceMigration("migrations/.sql");
+            new ResourceMigration(getContext(), "migrations/.sql");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
         }
 
         try {
-            new ResourceMigration("migrations/_.sql");
+            new ResourceMigration(getContext(), "migrations/_.sql");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
         }
 
         try {
-            new ResourceMigration("migrations/0_bad");
+            new ResourceMigration(getContext(), "migrations/0_bad");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Invalid migration name");
@@ -82,9 +82,9 @@ public class ResourceDataSourceTests extends AndroidTestCase {
     }
 
     public void testNonexistentSchema() throws Exception {
-        assertFalse(ResourceDataSource.resourceExists("wrong/schema.sql"));
+        assertFalse(ResourceDataSource.resourceExists(getContext(), "wrong/schema.sql"));
         try {
-            new ResourceSchema("wrong/schema.sql");
+            new ResourceSchema(getContext(), "wrong/schema.sql");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Could not find");
@@ -92,15 +92,15 @@ public class ResourceDataSourceTests extends AndroidTestCase {
     }
 
     public void testValidSchema() throws Exception {
-        assertTrue(ResourceDataSource.resourceExists("schema/schema.sql"));
-        Schema schema = new ResourceSchema("schema/schema.sql");
+        assertTrue(ResourceDataSource.resourceExists(getContext(), "schema/schema.sql"));
+        Schema schema = new ResourceSchema(getContext(), "schema/schema.sql");
         assertStreamNotNull(schema);
     }
 
     public void testNonexistentNoDescriptionMigration() throws Exception {
-        assertFalse(ResourceDataSource.resourceExists("wrong/1402070000.sql"));
+        assertFalse(ResourceDataSource.resourceExists(getContext(), "wrong/1402070000.sql"));
         try {
-            new ResourceMigration("wrong/1402070000.sql");
+            new ResourceMigration(getContext(), "wrong/1402070000.sql");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Could not find");
@@ -108,9 +108,9 @@ public class ResourceDataSourceTests extends AndroidTestCase {
     }
 
     public void testNonexistentDescriptionMigration() throws Exception {
-        assertFalse(ResourceDataSource.resourceExists("wrong/1402070000_Origin.sql"));
+        assertFalse(ResourceDataSource.resourceExists(getContext(), "wrong/1402070000_Origin.sql"));
         try {
-            new ResourceMigration("wrong/1402070000_Origin.sql");
+            new ResourceMigration(getContext(), "wrong/1402070000_Origin.sql");
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).startsWith("Could not find");
@@ -118,8 +118,8 @@ public class ResourceDataSourceTests extends AndroidTestCase {
     }
 
     public void testValidMigration() throws Exception {
-        assertTrue(ResourceDataSource.resourceExists("migrations/1402070000_Origin.sql"));
-        Migration migration = new ResourceMigration("migrations/1402070000_Origin.sql");
+        assertTrue(ResourceDataSource.resourceExists(getContext(), "migrations/1402070000_Origin.sql"));
+        Migration migration = new ResourceMigration(getContext(), "migrations/1402070000_Origin.sql");
         assertThat(migration.getVersion()).isEqualTo(1402070000L);
         assertThat(migration.getDescription()).isEqualTo("Origin");
         assertStreamNotNull(migration);
@@ -137,7 +137,7 @@ public class ResourceDataSourceTests extends AndroidTestCase {
         }
 
         // Create a DataSource with a schema and no table-creating migration.
-        migrationManager.addDataSource(new ResourceDataSource("schema/schema.sql", "migrations"));
+        migrationManager.addDataSource(new ResourceDataSource(getContext(), "schema/schema.sql", "migrations"));
         assertThat(migrationManager
                 .manageSchema(db, SQLiteMigrationManager.BootstrapAction.APPLY_SCHEMA))
                 .isEqualTo(6);

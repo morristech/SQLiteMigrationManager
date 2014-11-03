@@ -29,7 +29,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     public void testAddDataSource() throws Exception {
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
         assertFalse(migrationManager.hasSchema());
-        ResourceDataSource source = new ResourceDataSource("schema/schema.sql", "migrations");
+        ResourceDataSource source = new ResourceDataSource(getContext(), "schema/schema.sql", "migrations");
         migrationManager.addDataSource(source);
         assertTrue(migrationManager.hasSchema());
     }
@@ -45,7 +45,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     public void testHasSchemaGetSchema() throws Exception {
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
         assertFalse(migrationManager.hasSchema());
-        ResourceDataSource source = new ResourceDataSource("schema/schema.sql", "migrations");
+        ResourceDataSource source = new ResourceDataSource(getContext(), "schema/schema.sql", "migrations");
         migrationManager.addDataSource(source);
         assertTrue(migrationManager.hasSchema());
         assertThat(migrationManager.getSchema()).isNotNull();
@@ -64,7 +64,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
             assertThat(e.getMessage()).isEqualTo("No schemas in DataSource set.");
         }
 
-        ResourceDataSource source = new ResourceDataSource("schema/schema.sql", "migrations");
+        ResourceDataSource source = new ResourceDataSource(getContext(), "schema/schema.sql", "migrations");
         migrationManager.addDataSource(source);
         assertTrue(migrationManager.hasSchema());
 
@@ -87,7 +87,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         } catch (IllegalStateException e) {
             assertThat(e.getMessage()).isEqualTo("No DataSources added");
         }
-        ResourceDataSource source = new ResourceDataSource("schema/schema.sql", "migrations");
+        ResourceDataSource source = new ResourceDataSource(getContext(), "schema/schema.sql", "migrations");
         migrationManager.addDataSource(source);
 
         List<Migration> migrations = migrationManager.getMigrations();
@@ -197,7 +197,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
             assertThat(e.getMessage()).isEqualTo("No DataSources added");
         }
 
-        ResourceDataSource source = new ResourceDataSource("schema/schema.sql", "migrations");
+        ResourceDataSource source = new ResourceDataSource(getContext(), "schema/schema.sql", "migrations");
         migrationManager.addDataSource(source);
 
         // With a blank table, all migrations are pending.
