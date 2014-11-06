@@ -5,7 +5,7 @@ apply plugin: 'git-repo'
 
 android {
     compileSdkVersion 19
-    buildToolsVersion "19.1.0"
+    buildToolsVersion "21"
 
     defaultConfig {
         applicationId "com.layer.sqlite"
@@ -32,7 +32,7 @@ task bundleJar(type: Jar) {
 }
 
 task sourceJar(type: Jar) {
-    from android.sourceSets.main
+    from fileTree(dir: 'src/main')
 }
 
 project.ext {

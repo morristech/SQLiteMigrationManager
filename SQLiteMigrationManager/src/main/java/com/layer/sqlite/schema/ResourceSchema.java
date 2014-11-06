@@ -6,20 +6,25 @@
  */
 package com.layer.sqlite.schema;
 
+import android.content.Context;
+
 import com.layer.sqlite.datasource.ResourceDataSource;
 
 import java.io.InputStream;
 
 public class ResourceSchema extends Schema {
-    public ResourceSchema(String path) {
+    private final Context mContext;
+
+    public ResourceSchema(Context context, String path) {
         super(path);
-        if (!ResourceDataSource.resourceExists(path)) {
+        mContext = context;
+        if (!ResourceDataSource.resourceExists(mContext, path)) {
             throw new IllegalArgumentException("Could not find '" + path + "'");
         }
     }
 
     @Override
     public InputStream getStream() {
-        return ResourceDataSource.getResourceAsStream(getPath());
+        return ResourceDataSource.getResourceAsStream(mContext, getPath());
     }
 }
