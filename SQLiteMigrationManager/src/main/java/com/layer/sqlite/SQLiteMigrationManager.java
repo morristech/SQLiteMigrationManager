@@ -6,14 +6,14 @@
  */
 package com.layer.sqlite;
 
-import com.layer.sqlite.datasource.DataSource;
-import com.layer.sqlite.migrations.Migration;
-import com.layer.sqlite.schema.Schema;
-
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+
+import com.layer.sqlite.datasource.DataSource;
+import com.layer.sqlite.migrations.Migration;
+import com.layer.sqlite.schema.Schema;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -366,5 +366,29 @@ public class SQLiteMigrationManager {
         ContentValues values = new ContentValues();
         values.put("version", version);
         db.insert("schema_migrations", null, values);
+    }
+
+    /**
+     * Returns true if the provided database's current version is not contained in the migrations,
+     * or false if it does.
+     *
+     * @param db Database to check for downgrading.
+     * @return true if the provided database has a higher version than the known migrations.
+     */
+    public boolean isDowngrade(SQLiteDatabase db) {
+        if (!hasMigrationsTable(db)) {
+            return false;
+        }
+        
+        Long max = getCurrentVersion(db);
+        List<Migration> migrations = getMigrations();
+
+        boolean isCurrentVersionInMigrations = false;
+        for (Migration migration : migrations) {
+            if (migration.getVersion().equals(max)) {
+                isCurrentVersionInMigrations = true;
+            }
+        }
+        return !isCurrentVersionInMigrations;
     }
 }

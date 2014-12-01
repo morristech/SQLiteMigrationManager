@@ -1,13 +1,13 @@
 package com.layer.sqlite;
 
-import com.layer.sqlite.datasource.ResourceDataSource;
-import com.layer.sqlite.migrations.Migration;
-
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.test.AndroidTestCase;
+
+import com.layer.sqlite.datasource.ResourceDataSource;
+import com.layer.sqlite.migrations.Migration;
 
 import java.io.IOException;
 import java.util.List;
@@ -559,6 +559,29 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(c4.getString(0)).isEqualTo("spotted");
         assertThat(c4.getLong(1)).isEqualTo(75);
         c4.close();
+    }
+
+    public void testIsDowngrade() throws Exception {
+        SQLiteDatabase db = getDatabase(getContext());
+        SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
+
+        // Verify not a downgrade when there is no schema table
+        assertFalse(migrationManager.isDowngrade(db));
+
+        // Create a DataSource with a schema and no table-creating migration.
+        migrationManager.addDataSource(mockBananaDataSourceSchemaNoTable());
+        assertThat(migrationManager
+                .manageSchema(db, BootstrapAction.APPLY_SCHEMA))
+                .isEqualTo(6);
+        assertTrue(migrationManager.hasMigrationsTable(db));
+
+        // Verify applied versions.
+        assertThat(migrationManager.getCurrentVersion(db)).isEqualTo(1402070006L);
+        assertFalse(migrationManager.isDowngrade(db));
+
+        // Add a version and verify that this manager's migrations are a downgrade.
+        migrationManager.insertVersion(db, 1402070007L);
+        assertTrue(migrationManager.isDowngrade(db));
     }
 
     public void testUpgradeOpenHelper() throws Exception {
