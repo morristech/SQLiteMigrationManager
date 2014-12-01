@@ -565,6 +565,9 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         SQLiteDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
+        // Verify not a downgrade when there is no schema table
+        assertFalse(migrationManager.isDowngrade(db));
+
         // Create a DataSource with a schema and no table-creating migration.
         migrationManager.addDataSource(mockBananaDataSourceSchemaNoTable());
         assertThat(migrationManager

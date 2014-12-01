@@ -376,6 +376,10 @@ public class SQLiteMigrationManager {
      * @return true if the provided database has a higher version than the known migrations.
      */
     public boolean isDowngrade(SQLiteDatabase db) {
+        if (!hasMigrationsTable(db)) {
+            return false;
+        }
+        
         Long max = getCurrentVersion(db);
         List<Migration> migrations = getMigrations();
 
