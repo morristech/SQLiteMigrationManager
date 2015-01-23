@@ -622,4 +622,24 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         db2.close();
         openHelper.close();
     }
+
+    public void testExceptionFromManageSchema() throws Exception {
+        SQLiteDatabase db = getDatabase(getContext());
+
+        // Create "bananas" table to trigger exception
+        String createTable = "CREATE TABLE bananas (\n"
+                + "    name TEXT\n"
+                + ");";
+        db.execSQL(createTable);
+
+        SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
+        migrationManager.addDataSource(mockBananaDataSourceSchemaNoTable());
+        try {
+            migrationManager.manageSchema(db, BootstrapAction.APPLY_SCHEMA);
+            fail("Expected exception");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

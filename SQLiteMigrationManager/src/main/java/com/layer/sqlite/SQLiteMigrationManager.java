@@ -96,10 +96,6 @@ public class SQLiteMigrationManager {
 
                     // Set the inner Migration transaction successful.
                     db.setTransactionSuccessful();
-                } catch (SQLException e) {
-                    // Halt the migration process on error.
-                    e.printStackTrace();
-                    break;
                 } finally {
                     // End the inner Migration transaction.
                     db.endTransaction();

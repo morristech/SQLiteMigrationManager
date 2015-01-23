@@ -4,13 +4,12 @@ apply plugin: 'maven-publish'
 apply plugin: 'git-repo'
 
 android {
-    compileSdkVersion 19
-    buildToolsVersion "21"
+    compileSdkVersion 21
+    buildToolsVersion "21.1.2"
 
     defaultConfig {
-        applicationId "com.layer.sqlite"
         minSdkVersion 14
-        targetSdkVersion 19
+        targetSdkVersion 14
         versionCode 1
         versionName "1.0"
     }
