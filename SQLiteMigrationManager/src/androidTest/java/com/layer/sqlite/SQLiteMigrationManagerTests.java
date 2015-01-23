@@ -636,10 +636,11 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         migrationManager.addDataSource(mockBananaDataSourceSchemaNoTable());
         try {
             migrationManager.manageSchema(db, BootstrapAction.APPLY_SCHEMA);
-            fail("Expected exception");
+            failBecauseExceptionWasNotThrown(SQLException.class);
         }
         catch (Exception e) {
             e.printStackTrace();
+            assertThat(e.getMessage()).contains("bananas already exists");
         }
     }
 }
