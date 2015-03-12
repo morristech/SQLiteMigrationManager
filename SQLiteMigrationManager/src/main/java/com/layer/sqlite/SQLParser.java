@@ -6,12 +6,14 @@
  */
 package com.layer.sqlite;
 
-import com.layer.sqlite.migrations.Migration;
-import com.layer.sqlite.schema.Schema;
-
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+
+import com.layer.sqlite.migrations.CodeMigration;
+import com.layer.sqlite.migrations.Migration;
+import com.layer.sqlite.migrations.StreamMigration;
+import com.layer.sqlite.schema.Schema;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,16 +23,23 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
+
 public class SQLParser {
     public static void execute(SQLiteDatabase db, Schema schema) throws IOException {
         execute(db, schema.getStream());
     }
 
     public static void execute(SQLiteDatabase db, Migration migration) throws IOException {
-        execute(db, migration.getStream());
+        if (migration instanceof StreamMigration) {
+            execute(db, ((StreamMigration) migration).getStream());
+        } else if (migration instanceof CodeMigration) {
+            ((CodeMigration) migration).execute(db);
+        } else {
+            throw new IllegalArgumentException("Unknown migration type: " + migration);
+        }
     }
 
-    private static void execute(SQLiteDatabase db, InputStream in)
+    protected static void execute(SQLiteDatabase db, InputStream in)
             throws IOException, SQLException {
         try {
             Execute.statements(db, Statements.fromStream(in));
@@ -64,7 +73,7 @@ public class SQLParser {
     /**
      * Executes lists of statements.
      */
-    private static class Execute {
+    protected static class Execute {
         private final static Set<String> COMMENT_PREFIXES = new HashSet<String>(
                 Arrays.asList("--"));
         private final static Set<String> EXEC_PREFIXES = new HashSet<String>(

@@ -6,10 +6,14 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.test.AndroidTestCase;
 
+import com.layer.sqlite.datasource.DataSource;
 import com.layer.sqlite.datasource.ResourceDataSource;
+import com.layer.sqlite.migrations.CodeMigration;
 import com.layer.sqlite.migrations.Migration;
+import com.layer.sqlite.schema.Schema;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -17,10 +21,12 @@ import java.util.UUID;
 import static com.layer.sqlite.Fixtures.assertStreamNotNull;
 import static com.layer.sqlite.Fixtures.getDatabase;
 import static com.layer.sqlite.Fixtures.getMigrationManagerMockDataSource;
+import static com.layer.sqlite.Fixtures.mockBananaDataSource;
 import static com.layer.sqlite.Fixtures.mockBananaDataSourceNoSchemaCreatesTable;
 import static com.layer.sqlite.Fixtures.mockBananaDataSourceNoSchemaNoTable;
 import static com.layer.sqlite.Fixtures.mockBananaDataSourceNoSchemaNoTable2;
 import static com.layer.sqlite.Fixtures.mockBananaDataSourceSchemaNoTable;
+import static com.layer.sqlite.Fixtures.mockCodeBananaDataSource;
 import static com.layer.sqlite.SQLiteMigrationManager.BootstrapAction;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.assertions.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -78,6 +84,11 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         migrationManager.applySchema(db);
         assertThat(migrationManager.getCurrentVersion(db)).isEqualTo(1402070000);
     }
+
+
+    //==============================================================================================
+    // Resource Migrations
+    //==============================================================================================
 
     public void testGetMigrations() throws Exception {
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
@@ -637,10 +648,191 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         try {
             migrationManager.manageSchema(db, BootstrapAction.APPLY_SCHEMA);
             failBecauseExceptionWasNotThrown(SQLException.class);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             assertThat(e.getMessage()).contains("bananas already exists");
         }
+    }
+
+    //==============================================================================================
+    // Code Migrations
+    //==============================================================================================
+
+    public void testGetCodeMigrations() throws Exception {
+        SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
+        try {
+            migrationManager.getMigrations();
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).isEqualTo("No DataSources added");
+        }
+
+        DataSource source = mockCodeBananaDataSource();
+        migrationManager.addDataSource(source);
+
+        List<Migration> migrations = migrationManager.getMigrations();
+        assertThat(migrations).hasSize(7);
+
+        assertThat(migrations.get(0).getVersion()).isEqualTo(1402070000);
+        assertThat(migrations.get(1).getVersion()).isEqualTo(1402070001);
+        assertThat(migrations.get(2).getVersion()).isEqualTo(1402070002);
+        assertThat(migrations.get(3).getVersion()).isEqualTo(1402070003);
+        assertThat(migrations.get(4).getVersion()).isEqualTo(1402070004);
+        assertThat(migrations.get(5).getVersion()).isEqualTo(1402070005);
+        assertThat(migrations.get(6).getVersion()).isEqualTo(1402070006);
+
+        assertThat(migrations.get(0).getDescription()).isEqualTo("Origin");
+        assertThat(migrations.get(1).getDescription()).isEqualTo("CreateTableBananas");
+        assertThat(migrations.get(2).getDescription()).isEqualTo("InsertWhiteYellowIntoBananas");
+        assertThat(migrations.get(3).getDescription()).isEqualTo("AlterBananasAddRipeness");
+        assertThat(migrations.get(4).getDescription()).isEqualTo("UpdateBananasSetRipeness");
+        assertThat(migrations.get(5).getDescription()).isEqualTo("InsertGreenBrownIntoBananas");
+        assertThat(migrations.get(6).getDescription()).isEqualTo("DeleteWhiteFromBananas");
+    }
+
+    public void testManageCodeSchemaActionNone() throws Exception {
+        SQLiteDatabase db = getDatabase(getContext());
+        SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
+
+        try {
+            migrationManager.manageSchema(db, BootstrapAction.NONE);
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).isEqualTo("No DataSources added");
+        }
+
+        // Create a DataSource with no schema but with a table-creating migration.
+        migrationManager.addDataSource(mockCodeBananaDataSource());
+        assertThat(migrationManager
+                .manageSchema(db, BootstrapAction.NONE))
+                .isEqualTo(7);
+        assertTrue(migrationManager.hasMigrationsTable(db));
+
+        // Verify applied versions.
+        Cursor c = db.rawQuery("SELECT version FROM schema_migrations ORDER BY version", null);
+        assertThat(c.getCount()).isEqualTo(7);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070000);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070001);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070002);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070003);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070004);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070005);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070006);
+        c.close();
+
+        //Verify inserted data
+        Cursor c2 = db.rawQuery("SELECT name, ripeness FROM bananas ORDER BY _ROWID_", null);
+        assertThat(c2.getCount()).isEqualTo(3);
+        c2.moveToNext();
+        assertThat(c2.getString(0)).isEqualTo("yellow");
+        assertThat(c2.getLong(1)).isEqualTo(50);
+        c2.moveToNext();
+        assertThat(c2.getString(0)).isEqualTo("brown");
+        assertThat(c2.getLong(1)).isEqualTo(80);
+        c2.moveToNext();
+        assertThat(c2.getString(0)).isEqualTo("green");
+        assertThat(c2.getLong(1)).isEqualTo(0);
+        c2.close();
+
+        assertThat(migrationManager.getOriginVersion(db))
+                .isEqualTo(1402070000);
+
+        assertThat(migrationManager.getCurrentVersion(db))
+                .isEqualTo(1402070006);
+
+        // Verify that 0 migrations remain.
+        assertThat(migrationManager
+                .manageSchema(db, BootstrapAction.NONE))
+                .isEqualTo(0);
+    }
+
+    public void testManageCombinedResourceCodeSchemaActionNone() throws Exception {
+        SQLiteDatabase db = getDatabase(getContext());
+        SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
+
+        try {
+            migrationManager.manageSchema(db, BootstrapAction.NONE);
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
+        } catch (IllegalStateException e) {
+            assertThat(e.getMessage()).isEqualTo("No DataSources added");
+        }
+
+        // Create a DataSource with no schema but with a table-creating migration.
+        migrationManager.addDataSource(mockBananaDataSource());
+        migrationManager.addDataSource(new DataSource() {
+            @Override
+            public boolean hasSchema() {
+                return false;
+            }
+
+            @Override
+            public Schema getSchema() {
+                return null;
+            }
+
+            @Override
+            public List<Migration> getMigrations() {
+                return Arrays.asList((Migration) new CodeMigration("1402070007_DeleteBrownFromBananas.sql") {
+                    @Override
+                    public void execute(SQLiteDatabase db) throws IOException {
+                        db.execSQL("DELETE FROM bananas WHERE name = 'brown';");
+                    }
+                });
+            }
+        });
+        assertThat(migrationManager
+                .manageSchema(db, BootstrapAction.NONE))
+                .isEqualTo(8);
+        assertTrue(migrationManager.hasMigrationsTable(db));
+
+        // Verify applied versions.
+        Cursor c = db.rawQuery("SELECT version FROM schema_migrations ORDER BY version", null);
+        assertThat(c.getCount()).isEqualTo(8);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070000);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070001);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070002);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070003);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070004);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070005);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070006);
+        c.moveToNext();
+        assertThat(c.getLong(0)).isEqualTo(1402070007);
+        c.close();
+
+        //Verify inserted data
+        Cursor c2 = db.rawQuery("SELECT name, ripeness FROM bananas ORDER BY _ROWID_", null);
+        assertThat(c2.getCount()).isEqualTo(2);
+        c2.moveToNext();
+        assertThat(c2.getString(0)).isEqualTo("yellow");
+        assertThat(c2.getLong(1)).isEqualTo(50);
+        c2.moveToNext();
+        assertThat(c2.getString(0)).isEqualTo("green");
+        assertThat(c2.getLong(1)).isEqualTo(0);
+        c2.close();
+
+        assertThat(migrationManager.getOriginVersion(db))
+                .isEqualTo(1402070000);
+
+        assertThat(migrationManager.getCurrentVersion(db))
+                .isEqualTo(1402070007);
+
+        // Verify that 0 migrations remain.
+        assertThat(migrationManager
+                .manageSchema(db, BootstrapAction.NONE))
+                .isEqualTo(0);
     }
 }

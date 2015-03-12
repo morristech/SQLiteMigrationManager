@@ -6,21 +6,25 @@
  */
 package com.layer.sqlite;
 
-import com.layer.sqlite.datasource.DataSource;
-import com.layer.sqlite.migrations.Migration;
-import com.layer.sqlite.schema.Schema;
-
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import com.layer.sqlite.datasource.DataSource;
+import com.layer.sqlite.migrations.CodeMigration;
+import com.layer.sqlite.migrations.Migration;
+import com.layer.sqlite.migrations.StreamMigration;
+import com.layer.sqlite.schema.Schema;
+
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.LinkedList;
 import java.util.List;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+
 public class Fixtures {
     public static void assertStreamNotNull(Schema schema) throws Exception {
         InputStream in = null;
@@ -35,9 +39,10 @@ public class Fixtures {
     }
 
     public static void assertStreamNotNull(Migration migration) throws Exception {
+        assertThat(migration).isInstanceOf(StreamMigration.class);
         InputStream in = null;
         try {
-            in = migration.getStream();
+            in = ((StreamMigration) migration).getStream();
             assertThat(in).isNotNull();
         } finally {
             if (in != null) {
@@ -67,7 +72,7 @@ public class Fixtures {
     }
 
     public static DataSource mockDataSource(final String schemaSql,
-            final String[] migrationNames, final String[] migrationSql) {
+                                            final String[] migrationNames, final String[] migrationSql) {
 
         return new DataSource() {
             @Override
@@ -101,7 +106,7 @@ public class Fixtures {
                     final String name = migrationNames[i];
                     final String sql = migrationSql[i];
 
-                    ms.add(new Migration(name) {
+                    ms.add(new StreamMigration(name) {
                         @Override
                         public InputStream getStream() {
                             try {
@@ -326,4 +331,53 @@ public class Fixtures {
                         migration6, migration7, migration8}
         );
     }
+
+    public static CodeMigration codeMigration(String name, final String sql) {
+        return new CodeMigration(name) {
+            @Override
+            public void execute(SQLiteDatabase db) throws IOException {
+                List<String> statements = SQLParser.Statements.fromStream(new ByteArrayInputStream(sql.getBytes()));
+                SQLParser.Execute.statements(db, statements);
+            }
+        };
+    }
+
+    public static DataSource mockCodeBananaDataSource() {
+        return new DataSource() {
+            @Override
+            public boolean hasSchema() {
+                return false;
+            }
+
+            @Override
+            public Schema getSchema() {
+                return null;
+            }
+
+            @Override
+            public List<Migration> getMigrations() {
+                List<Migration> codeMigrations = new LinkedList<Migration>();
+                codeMigrations.add(codeMigration("1402070000_Origin.sql", "CREATE TABLE schema_migrations (\n" +
+                        "  version INTEGER UNIQUE NOT NULL\n" +
+                        ");"));
+                codeMigrations.add(codeMigration("1402070001_CreateTableBananas.sql", "CREATE TABLE bananas (\n" +
+                        "    name TEXT\n" +
+                        ");"));
+                codeMigrations.add(codeMigration("1402070002_InsertWhiteYellowIntoBananas.sql", "INSERT INTO bananas (name) VALUES ('white');\n" +
+                        "\n" +
+                        "INSERT INTO bananas (name) VALUES ('yellow');"));
+                codeMigrations.add(codeMigration("1402070003_AlterBananasAddRipeness.sql", "ALTER TABLE bananas ADD ripeness NUMERIC;"));
+                codeMigrations.add(codeMigration("1402070004_UpdateBananasSetRipeness.sql", "UPDATE bananas SET ripeness = 1 WHERE name = 'white';\n" +
+                        "\n" +
+                        "UPDATE bananas SET ripeness = 50 WHERE name = 'yellow';"));
+                codeMigrations.add(codeMigration("1402070005_InsertGreenBrownIntoBananas.sql", "INSERT INTO bananas (name, ripeness) VALUES ('brown', 80);\n" +
+                        "\n" +
+                        "INSERT INTO bananas (name, ripeness) VALUES ('green', 0);"));
+                codeMigrations.add(codeMigration("1402070006_DeleteWhiteFromBananas.sql", "DELETE FROM bananas WHERE name = 'white';"));
+                return codeMigrations;
+            }
+        };
+
+    }
+
 }
