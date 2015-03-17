@@ -28,6 +28,17 @@ public class SQLParserTests extends AndroidTestCase {
         assertThat(parsed.get(1)).isEqualTo("statement2;");
     }
 
+// TODO: make SQLParser handle statements not divided by empty newlines
+//    public void testParseMultipleNoCommentsNoNewlines() throws Exception {
+//        String statement = "statement1;\nstatement2;";
+//        InputStream in = new ByteArrayInputStream(statement.getBytes("UTF-8"));
+//
+//        List<String> parsed = SQLParser.Statements.fromStream(in);
+//        assertThat(parsed).hasSize(2);
+//        assertThat(parsed.get(0)).isEqualTo("statement1;");
+//        assertThat(parsed.get(1)).isEqualTo("statement2;");
+//    }
+
     public void testParseLineComment() throws Exception {
         String statement = "statement1;\n  --comment1 \n statement2;";
         InputStream in = new ByteArrayInputStream(statement.getBytes("UTF-8"));

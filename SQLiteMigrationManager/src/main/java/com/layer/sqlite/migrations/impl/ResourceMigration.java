@@ -1,18 +1,13 @@
-/**
- * Layer Android SDK
- *
- * Created by Steven Jones on 6/6/14
- * Copyright (c) 2013 Layer. All rights reserved.
- */
-package com.layer.sqlite.migrations;
+package com.layer.sqlite.migrations.impl;
 
 import android.content.Context;
 
 import com.layer.sqlite.datasource.ResourceDataSource;
+import com.layer.sqlite.migrations.StreamMigration;
 
 import java.io.InputStream;
 
-public class ResourceMigration extends Migration {
+public class ResourceMigration extends StreamMigration {
     private final Context mContext;
 
     public ResourceMigration(Context context, String path) {

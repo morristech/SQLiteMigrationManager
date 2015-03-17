@@ -9,7 +9,7 @@ package com.layer.sqlite.datasource;
 import android.content.Context;
 
 import com.layer.sqlite.migrations.Migration;
-import com.layer.sqlite.migrations.ResourceMigration;
+import com.layer.sqlite.migrations.impl.ResourceMigration;
 import com.layer.sqlite.schema.ResourceSchema;
 import com.layer.sqlite.schema.Schema;
 

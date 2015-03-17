@@ -6,9 +6,9 @@
  */
 package com.layer.sqlite.migrations;
 
-import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 public abstract class Migration implements Comparable<Migration> {
     /**
      * Valid names:
@@ -60,8 +60,6 @@ public abstract class Migration implements Comparable<Migration> {
     public String getDescription() {
         return mDescription;
     }
-
-    public abstract InputStream getStream();
 
     /**
      * Migrations are equal when their versions are equal.
