@@ -8,8 +8,7 @@ package com.layer.sqlite;
 
 import android.database.Cursor;
 import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
-
+import com.layer.sqlite.SQLDatabase;
 import com.layer.sqlite.migrations.CodeMigration;
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.migrations.StreamMigration;
@@ -24,12 +23,13 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+
 public class SQLParser {
-    public static void execute(SQLiteDatabase db, Schema schema) throws IOException {
+    public static void execute(SQLDatabase db, Schema schema) throws IOException {
         execute(db, schema.getStream());
     }
 
-    public static void execute(SQLiteDatabase db, Migration migration) throws IOException {
+    public static void execute(SQLDatabase db, Migration migration) throws IOException {
         if (migration instanceof StreamMigration) {
             execute(db, ((StreamMigration) migration).getStream());
         } else if (migration instanceof CodeMigration) {
@@ -39,7 +39,7 @@ public class SQLParser {
         }
     }
 
-    protected static void execute(SQLiteDatabase db, InputStream in)
+    protected static void execute(SQLDatabase db, InputStream in)
             throws IOException, SQLException {
         try {
             Execute.statements(db, Statements.fromStream(in));
@@ -73,7 +73,7 @@ public class SQLParser {
     /**
      * Executes lists of statements.
      */
-    protected static class Execute {
+    public static class Execute {
         private final static Set<String> COMMENT_PREFIXES = new HashSet<String>(
                 Arrays.asList("--"));
         private final static Set<String> EXEC_PREFIXES = new HashSet<String>(
@@ -108,7 +108,7 @@ public class SQLParser {
          * @throws java.io.IOException
          * @throws IllegalArgumentException If a statement cannot be parsed.
          */
-        public static void statements(SQLiteDatabase db, List<String> statements)
+        public static void statements(SQLDatabase db, List<String> statements)
                 throws IOException, SQLException {
             for (String statement : statements) {
                 statement = statement.trim();

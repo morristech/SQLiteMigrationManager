@@ -1,6 +1,6 @@
 package com.layer.sqlite.migrations;
 
-import android.database.sqlite.SQLiteDatabase;
+import com.layer.sqlite.SQLDatabase;
 
 import java.io.IOException;
 
@@ -15,5 +15,5 @@ public abstract class CodeMigration extends Migration {
      *
      * @return `true` for success, `false` for fail.
      */
-    public abstract void execute(SQLiteDatabase db) throws IOException;
+    public abstract void execute(SQLDatabase db) throws IOException;
 }

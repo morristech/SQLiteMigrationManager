@@ -9,11 +9,12 @@ package com.layer.sqlite;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
 
 import com.layer.sqlite.datasource.DataSource;
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
+import com.layer.sqlite.SQLDatabase;
+
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -25,6 +26,8 @@ import java.util.List;
 import java.util.Set;
 
 public class SQLiteMigrationManager {
+
+
     public static final long NO_VERSIONS = -1;
 
     /**
@@ -61,7 +64,7 @@ public class SQLiteMigrationManager {
      * @see #getAppliedVersions(android.database.sqlite.SQLiteDatabase)
      * @see com.layer.sqlite.SQLiteMigrationManager.BootstrapAction
      */
-    public int manageSchema(SQLiteDatabase db, BootstrapAction action) throws IOException {
+    public int manageSchema(SQLDatabase db, BootstrapAction action) throws IOException {
         int numApplied = 0;
 
         // Begin an outer transaction.
@@ -127,7 +130,7 @@ public class SQLiteMigrationManager {
      * @param db Database to query for the `schema_migrations` table.
      * @return true if the `schema_migrations` table exists.
      */
-    public boolean hasMigrationsTable(SQLiteDatabase db) {
+    public boolean hasMigrationsTable(SQLDatabase db) {
         Cursor c = null;
         try {
             c = db.rawQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
@@ -146,7 +149,7 @@ public class SQLiteMigrationManager {
      * @param db Database to create the `schema_migrations` table in.
      * @return `this` for chaining.
      */
-    public SQLiteMigrationManager createMigrationsTable(SQLiteDatabase db) {
+    public SQLiteMigrationManager createMigrationsTable(SQLDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (" +
                 "version INTEGER UNIQUE NOT NULL)");
         return this;
@@ -194,7 +197,7 @@ public class SQLiteMigrationManager {
      * @throws java.io.IOException
      * @throws android.database.SQLException
      */
-    public SQLiteMigrationManager applySchema(SQLiteDatabase db) throws IOException {
+    public SQLiteMigrationManager applySchema(SQLDatabase db) throws IOException {
         if (!hasSchema()) {
             throw new IllegalStateException("No schemas in DataSource set.");
         }
@@ -240,7 +243,7 @@ public class SQLiteMigrationManager {
      * @param db Database on which to compare migration versions.
      * @return The list of available Migrations which have not been applied.
      */
-    public List<Migration> getPendingMigrations(SQLiteDatabase db) throws IOException {
+    public List<Migration> getPendingMigrations(SQLDatabase db) throws IOException {
         // If this database isn't yet managed, just return the list of available Migrations.
         if (!hasMigrationsTable(db)) {
             return getMigrations();
@@ -285,7 +288,7 @@ public class SQLiteMigrationManager {
      * @return The lowest version present or NO_VERSIONS of the `schema_migrations` table is empty.
      * @throws android.database.SQLException When no `schema_migrations` table is present.
      */
-    public long getOriginVersion(SQLiteDatabase db) throws SQLException {
+    public long getOriginVersion(SQLDatabase db) throws SQLException {
         Cursor cursor = null;
         try {
             cursor = db.rawQuery("SELECT MIN(version) FROM schema_migrations", null);
@@ -311,7 +314,7 @@ public class SQLiteMigrationManager {
      * empty.
      * @throws android.database.SQLException When no `schema_migrations` table is present.
      */
-    public long getCurrentVersion(SQLiteDatabase db) throws SQLException {
+    public long getCurrentVersion(SQLDatabase db) throws SQLException {
         Cursor cursor = null;
         try {
             cursor = db.rawQuery("SELECT MAX(version) FROM schema_migrations", null);
@@ -335,7 +338,7 @@ public class SQLiteMigrationManager {
      * @return An ordered set of all versions applied.
      * @throws android.database.SQLException When no `schema_migrations` table is present.
      */
-    public LinkedHashSet<Long> getAppliedVersions(SQLiteDatabase db) throws SQLException {
+    public LinkedHashSet<Long> getAppliedVersions(SQLDatabase db) throws SQLException {
         Cursor cursor = null;
         try {
             LinkedHashSet<Long> versions = new LinkedHashSet<Long>();
@@ -358,7 +361,7 @@ public class SQLiteMigrationManager {
      * @param version Migration version to record.
      * @throws SQLException
      */
-    public void insertVersion(SQLiteDatabase db, Long version) throws SQLException {
+    public void insertVersion(SQLDatabase db, Long version) throws SQLException {
         ContentValues values = new ContentValues();
         values.put("version", version);
         db.insert("schema_migrations", null, values);
@@ -371,7 +374,7 @@ public class SQLiteMigrationManager {
      * @param db Database to check for downgrading.
      * @return true if the provided database has a higher version than the known migrations.
      */
-    public boolean isDowngrade(SQLiteDatabase db) {
+    public boolean isDowngrade(SQLDatabase db) {
         if (!hasMigrationsTable(db)) {
             return false;
         }
@@ -387,4 +390,7 @@ public class SQLiteMigrationManager {
         }
         return !isCurrentVersionInMigrations;
     }
+
+
+
 }

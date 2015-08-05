@@ -335,7 +335,7 @@ public class Fixtures {
     public static CodeMigration codeMigration(String name, final String sql) {
         return new CodeMigration(name) {
             @Override
-            public void execute(SQLiteDatabase db) throws IOException {
+            public void execute(SQLDatabase db) throws IOException {
                 List<String> statements = SQLParser.Statements.fromStream(new ByteArrayInputStream(sql.getBytes()));
                 SQLParser.Execute.statements(db, statements);
             }

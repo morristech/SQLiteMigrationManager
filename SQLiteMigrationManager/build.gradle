@@ -18,6 +18,7 @@ android {
 dependencies {
     androidTestCompile fileTree(dir: 'src/androidTest/libs', include: ['*.jar'])
     androidTestCompile 'com.squareup:fest-android:1.0.7'
+
 }
 
 /*************************************************

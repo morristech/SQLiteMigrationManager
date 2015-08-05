@@ -2,7 +2,6 @@ package com.layer.sqlite;
 
 import android.database.Cursor;
 import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.test.AndroidTestCase;
 
@@ -41,7 +40,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testHasMigrationsTableCreateMigrationsTable() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = getMigrationManagerMockDataSource();
         assertFalse(migrationManager.hasMigrationsTable(db));
         migrationManager.createMigrationsTable(db);
@@ -59,7 +58,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testApplySchema() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
         assertFalse(migrationManager.hasSchema());
 
@@ -130,7 +129,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testGetOriginVersion() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = getMigrationManagerMockDataSource();
 
         try {
@@ -152,7 +151,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testGetCurrentVersion() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = getMigrationManagerMockDataSource();
 
         try {
@@ -174,7 +173,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testInsertVersionGetAppliedVersions() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = getMigrationManagerMockDataSource();
 
         try {
@@ -198,7 +197,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testGetPendingVersions() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
@@ -261,7 +260,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testManageSchemaActionNone() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
@@ -324,7 +323,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testManageSchemaActionApplySchema() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
@@ -387,7 +386,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testManageSchemaActionCreateTable() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
@@ -448,7 +447,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testChainedManage() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
 
         (new SQLiteMigrationManager())
                 .addDataSource(mockBananaDataSourceNoSchemaNoTable())
@@ -487,7 +486,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testUpgrade() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
         migrationManager.addDataSource(mockBananaDataSourceNoSchemaNoTable());
 
@@ -573,7 +572,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testIsDowngrade() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         // Verify not a downgrade when there is no schema table
@@ -602,7 +601,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
 
         SQLiteOpenHelper openHelper = new SQLiteOpenHelper(getContext(), dbName, null, 1) {
             @Override
-            public void onConfigure(SQLiteDatabase db) {
+            public void onConfigure(SQLDatabase db) {
                 try {
                     migrationManager.manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE);
                 } catch (IOException e) {
@@ -611,31 +610,31 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
             }
 
             @Override
-            public void onCreate(SQLiteDatabase db) {
+            public void onCreate(SQLDatabase db) {
             }
 
             @Override
-            public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i2) {
+            public void onUpgrade(SQLDatabase sqLiteDatabase, int i, int i2) {
 
             }
         };
 
         migrationManager.addDataSource(mockBananaDataSourceNoSchemaNoTable());
-        SQLiteDatabase db1 = openHelper.getWritableDatabase();
+        SQLDatabase db1 = openHelper.getWritableDatabase();
         assertThat(migrationManager.getMigrations()).hasSize(6);
         db1.close();
         openHelper.close();
 
         // "Upgrade" with an additional migration
         migrationManager.addDataSource(mockBananaDataSourceNoSchemaNoTable2());
-        SQLiteDatabase db2 = openHelper.getWritableDatabase();
+        SQLDatabase db2 = openHelper.getWritableDatabase();
         assertThat(migrationManager.getMigrations()).hasSize(7);
         db2.close();
         openHelper.close();
     }
 
     public void testExceptionFromManageSchema() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
 
         // Create "bananas" table to trigger exception
         String createTable = "CREATE TABLE bananas (\n"
@@ -691,7 +690,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testManageCodeSchemaActionNone() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
@@ -754,7 +753,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testManageCombinedResourceCodeSchemaActionNone() throws Exception {
-        SQLiteDatabase db = getDatabase(getContext());
+        SQLDatabase db = getDatabase(getContext());
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
 
         try {
@@ -781,7 +780,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
             public List<Migration> getMigrations() {
                 return Arrays.asList((Migration) new CodeMigration("1402070007_DeleteBrownFromBananas.sql") {
                     @Override
-                    public void execute(SQLiteDatabase db) throws IOException {
+                    public void execute(SQLDatabase db) throws IOException {
                         db.execSQL("DELETE FROM bananas WHERE name = 'brown';");
                     }
                 });
