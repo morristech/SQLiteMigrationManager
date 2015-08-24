@@ -4,6 +4,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.StrictMode;
 import android.test.AndroidTestCase;
 
 import com.layer.sqlite.datasource.DataSource;
@@ -32,6 +33,16 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.assertions.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class SQLiteMigrationManagerTests extends AndroidTestCase {
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .penaltyDeath()
+                .build());
+    }
+
     public void testAddDataSource() throws Exception {
         SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
         assertFalse(migrationManager.hasSchema());
@@ -46,6 +57,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertFalse(migrationManager.hasMigrationsTable(db));
         migrationManager.createMigrationsTable(db);
         assertTrue(migrationManager.hasMigrationsTable(db));
+        db.close();
     }
 
     public void testHasSchemaGetSchema() throws Exception {
@@ -83,6 +95,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
 
         migrationManager.applySchema(db);
         assertThat(migrationManager.getCurrentVersion(db)).isEqualTo(1402070000);
+        db.close();
     }
 
 
@@ -149,6 +162,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(migrationManager.getOriginVersion(db)).isEqualTo(50L);
         migrationManager.insertVersion(db, 500L);
         assertThat(migrationManager.getOriginVersion(db)).isEqualTo(50L);
+        db.close();
     }
 
     public void testGetCurrentVersion() throws Exception {
@@ -171,6 +185,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(migrationManager.getCurrentVersion(db)).isEqualTo(100L);
         migrationManager.insertVersion(db, 500L);
         assertThat(migrationManager.getCurrentVersion(db)).isEqualTo(500L);
+        db.close();
     }
 
     public void testInsertVersionGetAppliedVersions() throws Exception {
@@ -195,6 +210,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(appliedVersions.toArray()[0]).isEqualTo(50L);
         assertThat(appliedVersions.toArray()[1]).isEqualTo(100L);
         assertThat(appliedVersions.toArray()[2]).isEqualTo(500L);
+        db.close();
     }
 
     public void testGetPendingVersions() throws Exception {
@@ -258,6 +274,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertStreamNotNull(m2.get(1));
         assertStreamNotNull(m2.get(2));
         assertStreamNotNull(m2.get(3));
+        db.close();
     }
 
     public void testManageSchemaActionNone() throws Exception {
@@ -321,6 +338,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(migrationManager
                 .manageSchema(db, BootstrapAction.NONE))
                 .isEqualTo(0);
+        db.close();
     }
 
     public void testManageSchemaActionApplySchema() throws Exception {
@@ -384,6 +402,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(migrationManager
                 .manageSchema(db, BootstrapAction.APPLY_SCHEMA))
                 .isEqualTo(0);
+        db.close();
     }
 
     public void testManageSchemaActionCreateTable() throws Exception {
@@ -445,6 +464,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(migrationManager
                 .manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE))
                 .isEqualTo(0);
+        db.close();
     }
 
     public void testChainedManage() throws Exception {
@@ -484,6 +504,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(c2.getString(0)).isEqualTo("green");
         assertThat(c2.getLong(1)).isEqualTo(0);
         c2.close();
+        db.close();
     }
 
     public void testUpgrade() throws Exception {
@@ -570,6 +591,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(c4.getString(0)).isEqualTo("spotted");
         assertThat(c4.getLong(1)).isEqualTo(75);
         c4.close();
+        db.close();
     }
 
     public void testIsDowngrade() throws Exception {
@@ -593,6 +615,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         // Add a version and verify that this manager's migrations are a downgrade.
         migrationManager.insertVersion(db, 1402070007L);
         assertTrue(migrationManager.isDowngrade(db));
+        db.close();
     }
 
     public void testUpgradeOpenHelper() throws Exception {
@@ -632,6 +655,8 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(migrationManager.getMigrations()).hasSize(7);
         db2.close();
         openHelper.close();
+        db1.close();
+        db2.close();
     }
 
     public void testExceptionFromManageSchema() throws Exception {
@@ -652,6 +677,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
             e.printStackTrace();
             assertThat(e.getMessage()).contains("bananas already exists");
         }
+        db.close();
     }
 
     //==============================================================================================
@@ -751,6 +777,7 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(migrationManager
                 .manageSchema(db, BootstrapAction.NONE))
                 .isEqualTo(0);
+        db.close();
     }
 
     public void testManageCombinedResourceCodeSchemaActionNone() throws Exception {
@@ -834,5 +861,6 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
         assertThat(migrationManager
                 .manageSchema(db, BootstrapAction.NONE))
                 .isEqualTo(0);
+        db.close();
     }
 }

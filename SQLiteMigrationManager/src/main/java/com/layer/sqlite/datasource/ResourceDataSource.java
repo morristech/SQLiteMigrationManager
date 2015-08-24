@@ -86,21 +86,25 @@ public class ResourceDataSource implements DataSource {
             while (target.hasMoreElements()) {
                 URL url = target.nextElement();
                 URLConnection connection = url.openConnection();
+                connection.setUseCaches(false);
 
                 if (connection instanceof JarURLConnection) {
                     // The schema resource is in a JAR; search within this JAR for migrations.
                     JarURLConnection urlcon = (JarURLConnection) connection;
-                    JarFile jar = urlcon.getJarFile();
-                    Enumeration<JarEntry> entries = jar.entries();
-                    while (entries.hasMoreElements()) {
-                        // Path is the item name in the JAR
-                        String path = entries.nextElement().getName();
-                        if (path.startsWith(mMigrationsPath)) {
-                            if (migrations.containsKey(path)) {
-                                continue;
+                    JarFile jar = null;
+                    try {
+                        jar = urlcon.getJarFile();
+                        Enumeration<JarEntry> entries = jar.entries();
+                        while (entries.hasMoreElements()) {
+                            // Path is the item name in the JAR
+                            String path = entries.nextElement().getName();
+                            if (path.startsWith(mMigrationsPath)) {
+                                if (migrations.containsKey(path)) continue;
+                                migrations.put(path, new ResourceMigration(mContext, path));
                             }
-                            migrations.put(path, new ResourceMigration(mContext, path));
                         }
+                    } finally {
+                        if (jar != null) jar.close();
                     }
                 } else {
                     // The schema resource is expanded onto the filesystem; jump to the migrations

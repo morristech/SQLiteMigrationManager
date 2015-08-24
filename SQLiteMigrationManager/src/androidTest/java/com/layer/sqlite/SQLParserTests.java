@@ -1,5 +1,6 @@
 package com.layer.sqlite;
 
+import android.os.StrictMode;
 import android.test.AndroidTestCase;
 
 import java.io.ByteArrayInputStream;
@@ -9,6 +10,16 @@ import java.util.List;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 public class SQLParserTests extends AndroidTestCase {
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .penaltyDeath()
+                .build());
+    }
+
     public void testParseSingleNoComments() throws Exception {
         String statement = "statement1;\ncontinued;";
         InputStream in = new ByteArrayInputStream(statement.getBytes("UTF-8"));
