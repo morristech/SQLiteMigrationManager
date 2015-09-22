@@ -37,7 +37,7 @@ public class SQLiteMigrationManager {
      * <li>CREATE_MIGRATIONS_TABLE: Create the `schema_migrations` table.</li>
      * </ul></p>
      */
-    public static enum BootstrapAction {
+    public enum BootstrapAction {
         NONE,
         APPLY_SCHEMA,
         CREATE_MIGRATIONS_TABLE
@@ -64,50 +64,56 @@ public class SQLiteMigrationManager {
     public int manageSchema(SQLiteDatabase db, BootstrapAction action) throws IOException {
         int numApplied = 0;
 
-        // Begin an outer transaction.
+        // Begin schema transaction.
+        validateDbReady(db, false);
         db.beginTransaction();
-
-        // Bootstrap if no `schema_migrations` is present.
-        if (!hasMigrationsTable(db)) {
-            switch (action) {
-                case APPLY_SCHEMA:
-                    applySchema(db);
-                    break;
-                case CREATE_MIGRATIONS_TABLE:
-                    createMigrationsTable(db);
-                    break;
-                case NONE:
-                default:
-                    break;
-            }
-        }
-
-        // Apply Migrations.
+        validateDbReady(db, true);
         try {
-            for (Migration migration : getPendingMigrations(db)) {
-                try {
-                    // Begin an inner Migration transaction.
-                    db.beginTransaction();
-
-                    // Apply the Migration.
-                    SQLParser.execute(db, migration);
-                    insertVersion(db, migration.getVersion());
-                    numApplied++;
-
-                    // Set the inner Migration transaction successful.
-                    db.setTransactionSuccessful();
-                } finally {
-                    // End the inner Migration transaction.
-                    db.endTransaction();
+            // Bootstrap if no `schema_migrations` is present.
+            if (!hasMigrationsTable(db)) {
+                switch (action) {
+                    case APPLY_SCHEMA:
+                        applySchema(db);
+                        break;
+                    case CREATE_MIGRATIONS_TABLE:
+                        createMigrationsTable(db);
+                        break;
+                    case NONE:
+                    default:
+                        break;
                 }
             }
-            // Set the outer transaction successful.
+            validateDbReady(db, true);
+
+            // Apply Migrations.
+            for (Migration migration : getPendingMigrations(db)) {
+                validateDbReady(db, true);
+                SQLParser.execute(db, migration);
+                insertVersion(db, migration.getVersion());
+                numApplied++;
+            }
+
+            // Set schema transaction successful.
+            validateDbReady(db, true);
             db.setTransactionSuccessful();
         } finally {
             // End the outer transaction.
             db.endTransaction();
         }
+        validateDbReady(db, false);
         return numApplied;
+    }
+
+    private static void validateDbReady(SQLiteDatabase db, boolean inTransaction) {
+        if (db == null) throw new IllegalArgumentException("Database is null");
+        if (!db.isOpen()) throw new IllegalArgumentException("Database is not open: " + db);
+        if (db.isReadOnly()) throw new IllegalArgumentException("Database is read only: " + db);
+        if (!inTransaction && db.inTransaction()) {
+            throw new IllegalArgumentException("Database transacted: " + db);
+        }
+        if (inTransaction && !db.inTransaction()) {
+            throw new IllegalArgumentException("Database not transacted: " + db);
+        }
     }
 
     /**
@@ -134,9 +140,7 @@ public class SQLiteMigrationManager {
                     new String[]{"schema_migrations"});
             return (c.getCount() > 0);
         } finally {
-            if (c != null) {
-                c.close();
-            }
+            if (c != null) c.close();
         }
     }
 
@@ -159,9 +163,7 @@ public class SQLiteMigrationManager {
      */
     public boolean hasSchema() {
         for (DataSource dataSource : mDataSources) {
-            if (dataSource.hasSchema()) {
-                return true;
-            }
+            if (dataSource.hasSchema()) return true;
         }
         return false;
     }
@@ -173,14 +175,9 @@ public class SQLiteMigrationManager {
      * @throws java.lang.IllegalStateException When no DataSources have been added.
      */
     public Schema getSchema() throws IllegalStateException {
-        if (mDataSources.isEmpty()) {
-            throw new IllegalStateException("No DataSources added");
-        }
-
+        if (mDataSources.isEmpty()) throw new IllegalStateException("No DataSources added");
         for (DataSource dataSource : mDataSources) {
-            if (dataSource.hasSchema()) {
-                return dataSource.getSchema();
-            }
+            if (dataSource.hasSchema()) return dataSource.getSchema();
         }
         return null;
     }
@@ -195,9 +192,7 @@ public class SQLiteMigrationManager {
      * @throws android.database.SQLException
      */
     public SQLiteMigrationManager applySchema(SQLiteDatabase db) throws IOException {
-        if (!hasSchema()) {
-            throw new IllegalStateException("No schemas in DataSource set.");
-        }
+        if (!hasSchema()) throw new IllegalStateException("No schemas in DataSource set.");
         SQLParser.execute(db, getSchema());
         return this;
     }
@@ -209,9 +204,7 @@ public class SQLiteMigrationManager {
      * @throws java.lang.IllegalStateException When no DataSources have been added.
      */
     public List<Migration> getMigrations() throws IllegalStateException {
-        if (mDataSources.isEmpty()) {
-            throw new IllegalStateException("No DataSources added");
-        }
+        if (mDataSources.isEmpty()) throw new IllegalStateException("No DataSources added");
 
         // Use Sets to prevent duplicate Migrations.
         Set<Migration> migrations = new HashSet<Migration>();
@@ -242,9 +235,7 @@ public class SQLiteMigrationManager {
      */
     public List<Migration> getPendingMigrations(SQLiteDatabase db) throws IOException {
         // If this database isn't yet managed, just return the list of available Migrations.
-        if (!hasMigrationsTable(db)) {
-            return getMigrations();
-        }
+        if (!hasMigrationsTable(db)) return getMigrations();
 
         // (1) Get the origin version of this database.
         long originVersion = getOriginVersion(db);
@@ -257,15 +248,11 @@ public class SQLiteMigrationManager {
         for (Migration migration : getMigrations()) {
             long version = migration.getVersion();
 
-            if (version <= originVersion) {
-                // Our origin already had this migration applied, continue.
-                continue;
-            }
+            // Our origin already had this migration applied, continue.
+            if (version <= originVersion) continue;
 
-            if (appliedVersions.contains(version)) {
-                // We've already applied this migration, continue.
-                continue;
-            }
+            // We've already applied this migration, continue.
+            if (appliedVersions.contains(version)) continue;
 
             // This Migration is pending.
             pendingMigrations.add(migration);
@@ -289,16 +276,11 @@ public class SQLiteMigrationManager {
         Cursor cursor = null;
         try {
             cursor = db.rawQuery("SELECT MIN(version) FROM schema_migrations", null);
-            cursor.moveToNext();
-            if (cursor.isNull(0)) {
-                return NO_VERSIONS;
-            }
-            return cursor.getLong(0);
+            if (cursor.moveToNext()) return (cursor.isNull(0)) ? NO_VERSIONS : cursor.getLong(0);
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
+        return NO_VERSIONS;
     }
 
     /**
@@ -315,16 +297,11 @@ public class SQLiteMigrationManager {
         Cursor cursor = null;
         try {
             cursor = db.rawQuery("SELECT MAX(version) FROM schema_migrations", null);
-            cursor.moveToNext();
-            if (cursor.isNull(0)) {
-                return NO_VERSIONS;
-            }
-            return cursor.getLong(0);
+            if (cursor.moveToNext()) return cursor.isNull(0) ? NO_VERSIONS : cursor.getLong(0);
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
+        return NO_VERSIONS;
     }
 
     /**
@@ -345,9 +322,7 @@ public class SQLiteMigrationManager {
             }
             return versions;
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
     }
 
@@ -372,19 +347,11 @@ public class SQLiteMigrationManager {
      * @return true if the provided database has a higher version than the known migrations.
      */
     public boolean isDowngrade(SQLiteDatabase db) {
-        if (!hasMigrationsTable(db)) {
-            return false;
-        }
-        
+        if (!hasMigrationsTable(db)) return false;
         Long max = getCurrentVersion(db);
-        List<Migration> migrations = getMigrations();
-
-        boolean isCurrentVersionInMigrations = false;
-        for (Migration migration : migrations) {
-            if (migration.getVersion().equals(max)) {
-                isCurrentVersionInMigrations = true;
-            }
+        for (Migration migration : getMigrations()) {
+            if (migration.getVersion().equals(max)) return false;
         }
-        return !isCurrentVersionInMigrations;
+        return true;
     }
 }
