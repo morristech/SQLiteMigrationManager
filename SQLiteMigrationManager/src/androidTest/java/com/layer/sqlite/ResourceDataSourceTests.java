@@ -1,14 +1,14 @@
 package com.layer.sqlite;
 
-import com.layer.sqlite.datasource.ResourceDataSource;
-import com.layer.sqlite.migrations.Migration;
-import com.layer.sqlite.migrations.impl.ResourceMigration;
-import com.layer.sqlite.schema.ResourceSchema;
-import com.layer.sqlite.schema.Schema;
-
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.test.AndroidTestCase;
+
+import com.layer.sqlite.datasource.ResourceDataSource;
+import com.layer.sqlite.migrations.Migration;
+import com.layer.sqlite.migrations.ResourceMigration;
+import com.layer.sqlite.schema.ResourceSchema;
+import com.layer.sqlite.schema.Schema;
 
 import static com.layer.sqlite.Fixtures.assertStreamNotNull;
 import static com.layer.sqlite.Fixtures.getDatabase;
@@ -81,7 +81,17 @@ public class ResourceDataSourceTests extends AndroidTestCase {
         }
     }
 
-    public void testNonexistentSchema() throws Exception {
+    public void testNonexistentSchemaInDataSource() throws Exception {
+        assertFalse(ResourceDataSource.resourceExists(getContext(), "wrong/schema.sql"));
+        try {
+            new ResourceDataSource(getContext(), "wrong/schema.sql", "migrations");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e.getMessage()).startsWith("Could not find");
+        }
+    }
+
+    public void testNonexistentSchemaInSchema() throws Exception {
         assertFalse(ResourceDataSource.resourceExists(getContext(), "wrong/schema.sql"));
         try {
             new ResourceSchema(getContext(), "wrong/schema.sql");

@@ -62,12 +62,14 @@ public class SQLiteMigrationManager {
      * @see com.layer.sqlite.SQLiteMigrationManager.BootstrapAction
      */
     public int manageSchema(SQLiteDatabase db, BootstrapAction action) throws IOException {
+        if (db == null) throw new IllegalArgumentException("Database is null");
+        if (!db.isOpen()) throw new IllegalArgumentException("Database is not open: " + db);
+        if (db.isReadOnly()) throw new IllegalArgumentException("Database is read only: " + db);
+
         int numApplied = 0;
 
         // Begin schema transaction.
-        validateDbReady(db, false);
         db.beginTransaction();
-        validateDbReady(db, true);
         try {
             // Bootstrap if no `schema_migrations` is present.
             if (!hasMigrationsTable(db)) {
@@ -83,18 +85,15 @@ public class SQLiteMigrationManager {
                         break;
                 }
             }
-            validateDbReady(db, true);
 
             // Apply Migrations.
             for (Migration migration : getPendingMigrations(db)) {
-                validateDbReady(db, true);
                 SQLParser.execute(db, migration);
                 insertVersion(db, migration.getVersion());
                 numApplied++;
             }
 
             // Set schema transaction successful.
-            validateDbReady(db, true);
             db.setTransactionSuccessful();
         } finally {
             // End the outer transaction.
@@ -119,11 +118,11 @@ public class SQLiteMigrationManager {
     /**
      * Adds a DataSource to the set of available sources for providing Schema and Migrations.
      *
-     * @param dataSource DataSource to add to the set of managed sources.
+     * @param dataSources DataSources to add to the set of managed sources.
      * @return `this` for chaining.
      */
-    public SQLiteMigrationManager addDataSource(DataSource... dataSource) {
-        mDataSources.addAll(Arrays.asList(dataSource));
+    public SQLiteMigrationManager addDataSource(DataSource... dataSources) {
+        mDataSources.addAll(Arrays.asList(dataSources));
         return this;
     }
 

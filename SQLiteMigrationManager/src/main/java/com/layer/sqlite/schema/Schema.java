@@ -7,6 +7,7 @@
 package com.layer.sqlite.schema;
 
 import java.io.InputStream;
+
 public abstract class Schema {
     private String mPath;
 
