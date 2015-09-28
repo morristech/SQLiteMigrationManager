@@ -12,8 +12,6 @@ public abstract class CodeMigration extends Migration {
 
     /**
      * Executes this migration on the given database.
-     *
-     * @return `true` for success, `false` for fail.
      */
     public abstract void execute(SQLiteDatabase db) throws IOException;
 }

@@ -9,7 +9,7 @@ package com.layer.sqlite.datasource;
 import android.content.Context;
 
 import com.layer.sqlite.migrations.Migration;
-import com.layer.sqlite.migrations.impl.ResourceMigration;
+import com.layer.sqlite.migrations.ResourceMigration;
 import com.layer.sqlite.schema.ResourceSchema;
 import com.layer.sqlite.schema.Schema;
 
@@ -33,6 +33,9 @@ public class ResourceDataSource implements DataSource {
     private final String mMigrationsPath;
 
     public ResourceDataSource(Context context, String schemaPath, String migrationsPath) {
+        if (schemaPath != null && !resourceExists(context, schemaPath)) {
+            throw new IllegalArgumentException("Could not find schema path: '" + schemaPath + "'");
+        }
         mContext = context;
         mSchemaPath = schemaPath;
         mMigrationsPath = migrationsPath;

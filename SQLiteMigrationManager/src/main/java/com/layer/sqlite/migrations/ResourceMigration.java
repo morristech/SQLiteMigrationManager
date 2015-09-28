@@ -1,9 +1,8 @@
-package com.layer.sqlite.migrations.impl;
+package com.layer.sqlite.migrations;
 
 import android.content.Context;
 
 import com.layer.sqlite.datasource.ResourceDataSource;
-import com.layer.sqlite.migrations.StreamMigration;
 
 import java.io.InputStream;
 
@@ -14,7 +13,7 @@ public class ResourceMigration extends StreamMigration {
         super(path);
         mContext = context;
         if (!ResourceDataSource.resourceExists(mContext, path)) {
-            throw new IllegalArgumentException("Could not find '" + path + "'");
+            throw new IllegalArgumentException("Could not find migration path: '" + path + "'");
         }
     }
 

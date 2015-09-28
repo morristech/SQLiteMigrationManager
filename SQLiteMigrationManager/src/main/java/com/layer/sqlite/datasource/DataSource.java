@@ -10,10 +10,11 @@ import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
 
 import java.util.List;
+
 public interface DataSource {
-    public boolean hasSchema();
+    boolean hasSchema();
 
-    public Schema getSchema();
+    Schema getSchema();
 
-    public List<Migration> getMigrations();
+    List<Migration> getMigrations();
 }

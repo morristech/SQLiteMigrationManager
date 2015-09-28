@@ -19,7 +19,7 @@ public class ResourceSchema extends Schema {
         super(path);
         mContext = context;
         if (!ResourceDataSource.resourceExists(mContext, path)) {
-            throw new IllegalArgumentException("Could not find '" + path + "'");
+            throw new IllegalArgumentException("Could not find schema path: '" + path + "'");
         }
     }
 
