@@ -20,9 +20,9 @@ import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -58,11 +58,8 @@ public class ResourceDataSource implements DataSource {
      */
     @Override
     public Schema getSchema() {
-        try {
-            return new ResourceSchema(mContext, mSchemaPath);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        if (mSchemaPath == null) return null;
+        return new ResourceSchema(mContext, mSchemaPath);
     }
 
     /**
@@ -82,58 +79,52 @@ public class ResourceDataSource implements DataSource {
      * @return a list of Migrations bundled in the java resources
      */
     @Override
-    public List<Migration> getMigrations() {
+    public List<Migration> getMigrations() throws URISyntaxException, IOException {
+        if (mMigrationsPath == null) return new ArrayList<Migration>();
         LinkedHashMap<String, Migration> migrations = new LinkedHashMap<String, Migration>();
-        try {
-            Enumeration<URL> target = mContext.getClassLoader().getResources(mSchemaPath);
-            while (target.hasMoreElements()) {
-                URL url = target.nextElement();
-                URLConnection connection = url.openConnection();
-                connection.setUseCaches(false);
+        Enumeration<URL> target = mContext.getClassLoader().getResources(mSchemaPath);
+        while (target.hasMoreElements()) {
+            URL url = target.nextElement();
+            URLConnection connection = url.openConnection();
+            connection.setUseCaches(false);
 
-                if (connection instanceof JarURLConnection) {
-                    // The schema resource is in a JAR; search within this JAR for migrations.
-                    JarURLConnection urlcon = (JarURLConnection) connection;
-                    JarFile jar = null;
-                    try {
-                        jar = urlcon.getJarFile();
-                        Enumeration<JarEntry> entries = jar.entries();
-                        while (entries.hasMoreElements()) {
-                            // Path is the item name in the JAR
-                            String path = entries.nextElement().getName();
-                            if (path.startsWith(mMigrationsPath)) {
-                                if (migrations.containsKey(path)) continue;
-                                migrations.put(path, new ResourceMigration(mContext, path));
-                            }
+            if (connection instanceof JarURLConnection) {
+                // The schema resource is in a JAR; search within this JAR for migrations.
+                JarURLConnection urlcon = (JarURLConnection) connection;
+                JarFile jar = null;
+                try {
+                    jar = urlcon.getJarFile();
+                    Enumeration<JarEntry> entries = jar.entries();
+                    while (entries.hasMoreElements()) {
+                        // Path is the item name in the JAR
+                        String path = entries.nextElement().getName();
+                        if (path.startsWith(mMigrationsPath)) {
+                            if (migrations.containsKey(path)) continue;
+                            migrations.put(path, new ResourceMigration(mContext, path));
                         }
-                    } finally {
-                        if (jar != null) jar.close();
                     }
-                } else {
-                    // The schema resource is expanded onto the filesystem; jump to the migrations
-                    String[] schemaDirs = mSchemaPath.split("[/]");
-                    File baseDir = new File(url.toURI());
-                    for (int i = 0; i < schemaDirs.length; i++) {
-                        baseDir = baseDir.getParentFile();
+                } finally {
+                    if (jar != null) jar.close();
+                }
+            } else {
+                // The schema resource is expanded onto the filesystem; jump to the migrations
+                String[] schemaDirs = mSchemaPath.split("[/]");
+                File baseDir = new File(url.toURI());
+                for (int i = 0; i < schemaDirs.length; i++) {
+                    baseDir = baseDir.getParentFile();
+                }
+                File migrationsDir = new File(baseDir, mMigrationsPath);
+                for (File file : migrationsDir.listFiles()) {
+                    // Resource path is still relative to the JAR (not the filesystem)
+                    String path = mMigrationsPath + "/" + file.getName();
+                    if (migrations.containsKey(path)) {
+                        continue;
                     }
-                    File migrationsDir = new File(baseDir, mMigrationsPath);
-                    for (File file : migrationsDir.listFiles()) {
-                        // Resource path is still relative to the JAR (not the filesystem)
-                        String path = mMigrationsPath + "/" + file.getName();
-                        if (migrations.containsKey(path)) {
-                            continue;
-                        }
-                        migrations.put(path, new ResourceMigration(mContext, path));
-                    }
+                    migrations.put(path, new ResourceMigration(mContext, path));
                 }
             }
-            return new LinkedList<Migration>(migrations.values());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
         }
-        return null;
+        return new ArrayList<Migration>(migrations.values());
     }
 
     public static boolean resourceExists(Context context, String path) {
