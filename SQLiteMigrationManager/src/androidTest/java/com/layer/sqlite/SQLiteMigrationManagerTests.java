@@ -14,6 +14,7 @@ import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -619,7 +620,6 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
     }
 
     public void testUpgradeOpenHelper() throws Exception {
-
         final SQLiteMigrationManager migrationManager = new SQLiteMigrationManager();
         final String dbName = UUID.randomUUID().toString();
 
@@ -629,7 +629,11 @@ public class SQLiteMigrationManagerTests extends AndroidTestCase {
                 try {
                     migrationManager.manageSchema(db, BootstrapAction.CREATE_MIGRATIONS_TABLE);
                 } catch (IOException e) {
+                    e.printStackTrace();
                     fail("IOException thrown: " + e.getMessage());
+                } catch (URISyntaxException e) {
+                    e.printStackTrace();
+                    fail("URISyntaxException thrown: " + e.getMessage());
                 }
             }
 

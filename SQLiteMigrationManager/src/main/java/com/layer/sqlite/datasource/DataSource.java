@@ -9,6 +9,8 @@ package com.layer.sqlite.datasource;
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 
 public interface DataSource {
@@ -16,5 +18,5 @@ public interface DataSource {
 
     Schema getSchema();
 
-    List<Migration> getMigrations();
+    List<Migration> getMigrations() throws URISyntaxException, IOException;
 }

@@ -16,6 +16,7 @@ import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.schema.Schema;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,7 +62,7 @@ public class SQLiteMigrationManager {
      * @see #getAppliedVersions(android.database.sqlite.SQLiteDatabase)
      * @see com.layer.sqlite.SQLiteMigrationManager.BootstrapAction
      */
-    public int manageSchema(SQLiteDatabase db, BootstrapAction action) throws IOException {
+    public int manageSchema(SQLiteDatabase db, BootstrapAction action) throws IOException, URISyntaxException {
         if (db == null) throw new IllegalArgumentException("Database is null");
         if (!db.isOpen()) throw new IllegalArgumentException("Database is not open: " + db);
         if (db.isReadOnly()) throw new IllegalArgumentException("Database is read only: " + db);
@@ -135,8 +136,7 @@ public class SQLiteMigrationManager {
     public boolean hasMigrationsTable(SQLiteDatabase db) {
         Cursor c = null;
         try {
-            c = db.rawQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
-                    new String[]{"schema_migrations"});
+            c = db.rawQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'", null);
             return (c.getCount() > 0);
         } finally {
             if (c != null) c.close();
@@ -150,8 +150,7 @@ public class SQLiteMigrationManager {
      * @return `this` for chaining.
      */
     public SQLiteMigrationManager createMigrationsTable(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (" +
-                "version INTEGER UNIQUE NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER UNIQUE NOT NULL)");
         return this;
     }
 
@@ -202,7 +201,7 @@ public class SQLiteMigrationManager {
      * @return A sorted list of Migrations from the set of DataSources.
      * @throws java.lang.IllegalStateException When no DataSources have been added.
      */
-    public List<Migration> getMigrations() throws IllegalStateException {
+    public List<Migration> getMigrations() throws IllegalStateException, IOException, URISyntaxException {
         if (mDataSources.isEmpty()) throw new IllegalStateException("No DataSources added");
 
         // Use Sets to prevent duplicate Migrations.
@@ -232,7 +231,7 @@ public class SQLiteMigrationManager {
      * @param db Database on which to compare migration versions.
      * @return The list of available Migrations which have not been applied.
      */
-    public List<Migration> getPendingMigrations(SQLiteDatabase db) throws IOException {
+    public List<Migration> getPendingMigrations(SQLiteDatabase db) throws IOException, URISyntaxException {
         // If this database isn't yet managed, just return the list of available Migrations.
         if (!hasMigrationsTable(db)) return getMigrations();
 
@@ -345,7 +344,7 @@ public class SQLiteMigrationManager {
      * @param db Database to check for downgrading.
      * @return true if the provided database has a higher version than the known migrations.
      */
-    public boolean isDowngrade(SQLiteDatabase db) {
+    public boolean isDowngrade(SQLiteDatabase db) throws IOException, URISyntaxException {
         if (!hasMigrationsTable(db)) return false;
         Long max = getCurrentVersion(db);
         for (Migration migration : getMigrations()) {
