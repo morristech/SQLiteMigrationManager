@@ -6,6 +6,7 @@
  */
 package com.layer.sqlite.migrations;
 
+import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,8 +31,9 @@ public abstract class Migration implements Comparable<Migration> {
     private final String mDescription;
 
     protected Migration(String path) {
-        String[] parts = path.split("[/]");
-        String fileName = parts[parts.length - 1].trim();
+        path = path.trim();
+        int index = path.lastIndexOf(File.separatorChar);
+        String fileName = (index == -1) ? path : path.substring(index + 1);
 
         Matcher matcher = MIGRATION_PATTERN.matcher(fileName);
         if (!matcher.matches()) {

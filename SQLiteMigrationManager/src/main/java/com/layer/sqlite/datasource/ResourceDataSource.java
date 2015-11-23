@@ -107,24 +107,35 @@ public class ResourceDataSource implements DataSource {
                     if (jar != null) jar.close();
                 }
             } else {
-                // The schema resource is expanded onto the filesystem; jump to the migrations
-                String[] schemaDirs = mSchemaPath.split("[/]");
+                // The schema resource is expanded onto the filesystem; find its base dir
                 File baseDir = new File(url.toURI());
-                for (int i = 0; i < schemaDirs.length; i++) {
+                int schemaDirsPastBaseDir = 1 + occurrences(mSchemaPath, File.separatorChar);
+                for (int i = 0; i < schemaDirsPastBaseDir; i++) {
                     baseDir = baseDir.getParentFile();
                 }
+
+                // Now that we know the base dir, jump to the migrations
                 File migrationsDir = new File(baseDir, mMigrationsPath);
                 for (File file : migrationsDir.listFiles()) {
                     // Resource path is still relative to the JAR (not the filesystem)
-                    String path = mMigrationsPath + "/" + file.getName();
-                    if (migrations.containsKey(path)) {
-                        continue;
-                    }
+                    String path = mMigrationsPath + File.separatorChar + file.getName();
+                    if (migrations.containsKey(path)) continue;
                     migrations.put(path, new ResourceMigration(mContext, path));
                 }
             }
         }
         return new ArrayList<Migration>(migrations.values());
+    }
+
+    /**
+     * Returns the number of time `c` appears in `s`
+     */
+    private static int occurrences(String s, char c) {
+        int count = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == c) count++;
+        }
+        return count;
     }
 
     public static boolean resourceExists(Context context, String path) {
