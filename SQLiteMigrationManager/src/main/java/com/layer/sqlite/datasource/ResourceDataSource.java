@@ -7,6 +7,7 @@
 package com.layer.sqlite.datasource;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.layer.sqlite.migrations.Migration;
 import com.layer.sqlite.migrations.impl.ResourceMigration;
@@ -89,17 +90,25 @@ public class ResourceDataSource implements DataSource {
                 connection.setUseCaches(false);
 
                 if (connection instanceof JarURLConnection) {
+                    Log.v("LayerSDK", "Adding migrations from Jar");
                     // The schema resource is in a JAR; search within this JAR for migrations.
                     JarURLConnection urlcon = (JarURLConnection) connection;
                     JarFile jar = null;
                     try {
                         jar = urlcon.getJarFile();
                         Enumeration<JarEntry> entries = jar.entries();
+                        Enumeration<JarEntry> entriesTemp = jar.entries();
+                        Log.v("LayerSDK", "Dump of Migration paths");
+                        while (entriesTemp.hasMoreElements()) {
+                            Log.v("LayerSDK", "Migration Path: " + entriesTemp.nextElement().getName());
+                        }
                         while (entries.hasMoreElements()) {
                             // Path is the item name in the JAR
                             String path = entries.nextElement().getName();
                             if (path.startsWith(mMigrationsPath)) {
                                 if (migrations.containsKey(path)) continue;
+                                if (path.length() == mMigrationsPath.length()) continue;
+                                Log.v("LayerSDK", "Adding migration for: " + path);
                                 migrations.put(path, new ResourceMigration(mContext, path));
                             }
                         }
@@ -107,6 +116,7 @@ public class ResourceDataSource implements DataSource {
                         if (jar != null) jar.close();
                     }
                 } else {
+                    Log.v("LayerSDK", "Adding migrations from fileSystem");
                     // The schema resource is expanded onto the filesystem; jump to the migrations
                     String[] schemaDirs = mSchemaPath.split("[/]");
                     File baseDir = new File(url.toURI());
